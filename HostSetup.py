@@ -2,6 +2,16 @@ import boto
 import rsa
 import ConfigParser
 import os
+import sys
+
+def get_instance(instance_id):
+	instance=None
+	for i in ec2.get_all_instances():
+		if i.instances[0].id == instance_id:
+			instance = i.instances[0]
+	return instance
+	
+HOST_NAME = sys.argv[1]
 
 # Constants
 POWERSHELL_DIR = "pws"
@@ -24,14 +34,21 @@ RSA_PRIVATE_KEY=parser.get("Configuration","RSA_PRIVATE_KEY")
 if not os.path.isdir(POWERSHELL_DIR):
 	os.makedirs(POWERSHELL_DIR)
 	
-# Which Instance do you want? 
-instance_no = -1
-
 # EC2 connection 
 ec2 = boto.connect_ec2()
 
 # Get Instance, DNS name, instance id
-instance = ec2.get_all_instances()[instance_no].instances[0]
+instance = get_instance(HOST_NAME)
+
+if not instance:
+	print HOST_NAME + "does not exist"
+else:
+	print HOST_NAME + " exists and is in state " + instance.state
+
+if instance.state <> "running":
+	print "Exitting as instance is not in running state"
+	exit()
+
 dns_name =  instance.public_dns_name
 instance_id =  instance.id
 
@@ -46,8 +63,10 @@ privkey = rsa.PrivateKey.load_pkcs1(keydata)
 if encrypted_pword:
 	password = rsa.decrypt(encrypted_pword,privkey)
 else:
-	password = "No password available yet"
+	print "No password available yet - exitting"
+	exit()
 
+print "Creating config for " + dns_name
 
 # Create download Python script
 f = open(POWERSHELL_DIR +"\\downloadpython.ps1","w")
@@ -71,15 +90,20 @@ f.close()
 f = open(POWERSHELL_DIR  +"\\server-setup.ps1","w")
 f.write('Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System -Name LocalAccountTokenFilterPolicy -Value 1 -Type DWord\n')
 f.write('Set-Item WSMan:\\localhost\\Client\TrustedHosts -Value ' + dns_name + " -Force -Concatenate\n")
-f.write('$pw = convertto-securestring -AsPlainText -Force -String '+password+'\n')
+f.write("$pw = convertto-securestring -AsPlainText -Force -String '"+password+"'\n")
 f.write('$cred = new-object -typename System.Management.Automation.PSCredential -argumentlist "'+instance_id+'\Administrator",$pw\n')
 f.write('$session = new-pssession -computername '+dns_name + ' -credential $cred\n')
-f.write("net use \\\\"+dns_name+" " + password + " /user:Administrator\n")
+f.write("net use \\\\"+dns_name+" '" + password + "' /user:Administrator\n")
 f.write("copy-item -force -path for_remote\* -destination \\\\"+dns_name+"\\"+INSTALL_DIR.replace(":","$")+"\n")
 f.write("copy-item -force -path config.ini -destination \\\\"+dns_name+"\\"+INSTALL_DIR.replace(":","$")+"\n")
 f.write("invoke-command -session $session -filepath pws\downloadpython.ps1\n")	
-# f.write("invoke-command -session $session -filepath pws\downloadmarklogic.ps1\n")	
-f.write("invoke-command -session $session {"+ INSTALL_DIR + PYTHON_EXE+"}\n")	
-f.write("invoke-command -session $session {cd " + INSTALL_DIR + " ; " + PYTHON_INSTALL_DIR + "\\python MarkLogicSetup.py}")
+f.write("invoke-command -session $session -filepath pws\downloadmarklogic.ps1\n")	
+f.write("sleep 30\n")
+f.write("echo 'installing python'\n")
+f.write("invoke-command -session $session {"+ INSTALL_DIR + PYTHON_EXE+" /passive /quiet}\n")	
+f.write("sleep 60\n")
+f.write("echo 'setting up MarkLogic'\n")
+f.write("invoke-command -session $session {cd " + INSTALL_DIR + " ; " + PYTHON_INSTALL_DIR + "\\python MarkLogicSetup.py}\n")
+f.write("invoke-command -session $session {netsh firewall set opmode disable}\n")
 f.close()
 
