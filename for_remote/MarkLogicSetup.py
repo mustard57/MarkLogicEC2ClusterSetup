@@ -112,6 +112,6 @@ sys("Move set host name script","copy /Y *.xqy \""+ADMIN_ROOT+"\"")
 HOST_ARGS = { 'HOST-NAME':getEC2Name() }
 httpProcess("Setting host name","set-host-name.xqy", HOST_ARGS)
 sys("Remove set host name script","del \""+ADMIN_ROOT+"set-host-name.xqy\"")
-print("Script completed, visit http://localhost:8001 to access the admin interface.")
+print("Script completed, visit http://"+getEC2Name()+":8001 to access the admin interface.")
 
 

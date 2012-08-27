@@ -24,3 +24,5 @@ for line in f.xreadlines():
 	sys("Setting up config for "+host,"python HostSetup.py "+host)
 	sys("Setting up "+host,"powershell -file pws\server-setup.ps1")
 	
+sys("Configuring cluster","python doClusterStuff.py")
+	

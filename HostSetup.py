@@ -3,6 +3,7 @@ import rsa
 import ConfigParser
 import os
 import sys
+import time
 
 def get_instance(instance_id):
 	instance=None
@@ -15,6 +16,7 @@ HOST_NAME = sys.argv[1]
 
 # Constants
 POWERSHELL_DIR = "pws"
+SLEEP_PERIOD = 30
 
 # Configuration
 CONFIG_FILE="config.ini"
@@ -33,38 +35,42 @@ RSA_PRIVATE_KEY=parser.get("Configuration","RSA_PRIVATE_KEY")
 # Set up powershell dir
 if not os.path.isdir(POWERSHELL_DIR):
 	os.makedirs(POWERSHELL_DIR)
-	
-# EC2 connection 
-ec2 = boto.connect_ec2()
 
-# Get Instance, DNS name, instance id
-instance = get_instance(HOST_NAME)
+dns_name = instance_id = password = ""
 
-if not instance:
-	print HOST_NAME + "does not exist"
-else:
-	print HOST_NAME + " exists and is in state " + instance.state
+while True:	
+	# EC2 connection 
+	ec2 = boto.connect_ec2()
+	print "Connecting to EC2 at "+time.strftime("%H:%M:%S", time.gmtime())
 
-if instance.state <> "running":
-	print "Exitting as instance is not in running state"
-	exit()
+	# Get Instance, DNS name, instance id
+	instance = get_instance(HOST_NAME)
 
-dns_name =  instance.public_dns_name
-instance_id =  instance.id
+	if not instance:
+		print HOST_NAME + "does not exist"
+	else:
+		print HOST_NAME + " exists and is in state " + instance.state
 
-# Get Encrypted password
-encrypted_pword = ec2.get_password_data(instance.id).strip("\n\r\t").decode('base64')
+	if instance.state <> "running":
+		print "Instance not yet in running state"
 
-with open(RSA_PRIVATE_KEY) as privatefile:
-	keydata = privatefile.read()
-privkey = rsa.PrivateKey.load_pkcs1(keydata)
+	dns_name =  instance.public_dns_name
+	instance_id =  instance.id
 
-# Get decrypted password
-if encrypted_pword:
-	password = rsa.decrypt(encrypted_pword,privkey)
-else:
-	print "No password available yet - exitting"
-	exit()
+	# Get Encrypted password
+	encrypted_pword = ec2.get_password_data(instance.id).strip("\n\r\t").decode('base64')
+
+	with open(RSA_PRIVATE_KEY) as privatefile:
+		keydata = privatefile.read()
+	privkey = rsa.PrivateKey.load_pkcs1(keydata)
+
+	# Get decrypted password
+	if encrypted_pword:
+		password = rsa.decrypt(encrypted_pword,privkey)		
+		break
+	else:
+		print "No password available yet - sleeping for "+str(SLEEP_PERIOD) + " secs"
+		time.sleep(SLEEP_PERIOD)
 
 print "Creating config for " + dns_name
 
@@ -107,3 +113,4 @@ f.write("invoke-command -session $session {cd " + INSTALL_DIR + " ; " + PYTHON_I
 f.write("invoke-command -session $session {netsh firewall set opmode disable}\n")
 f.close()
 
+print "Finishing "+dns_name+" config at "+time.strftime("%H:%M:%S", time.gmtime())
