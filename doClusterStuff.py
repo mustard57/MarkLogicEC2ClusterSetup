@@ -1,10 +1,7 @@
-import os
-import sys
-import ConfigParser
-import boto
+from MarkLogicEC2Config import HOST_FILE,CLUSTER_NAME
+from MarkLogicEC2Lib import sys,configureAuthHttpProcess,httpProcess
 
-import urllib
-import urllib2
+import boto
 
 def get_instance(instance_id):
 	instance=None
@@ -13,44 +10,8 @@ def get_instance(instance_id):
 			instance = i.instances[0]
 	return instance
 
-def sys(message, cmd):
-	print(message)
-	os.system(cmd)
-	time.sleep(10)
-	
-def httpProcess(message, url, args = "", debug = False):
-	print message
-	request = urllib2.Request(url)
-	if args == "":
-		response = urllib2.urlopen(request)
-	else:
-		response = urllib2.urlopen(request, urllib.urlencode(args))
-	if (debug == True):
-		data = response.read()
-		print data
-		
-def configureAuthHttpProcess(host):
-	href = "http://"+host+":8001"
-	passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
-	passman.add_password(None, href, ADMIN_USER_NAME, ADMIN_PASSWORD)
-	authhandler = urllib2.HTTPDigestAuthHandler(passman)
-	opener = urllib2.build_opener(authhandler)
-	urllib2.install_opener(opener)		
-
-
 # EC2 connection 
 ec2 = boto.connect_ec2()
-
-# Configuration
-CONFIG_FILE="config.ini"
-                                     									 
-parser = ConfigParser.ConfigParser()
-parser.read(CONFIG_FILE)
-
-HOST_FILE = parser.get("Constants","HOST_FILE")
-ADMIN_USER_NAME=parser.get("Configuration","ADMIN_USER_NAME")
-ADMIN_PASSWORD=parser.get("Configuration","ADMIN_PASSWORD")
-CLUSTER_NAME=parser.get("Configuration","CLUSTER_NAME")
 
 f = open(HOST_FILE)
 

@@ -1,0 +1,31 @@
+import ConfigParser
+
+# Configuration
+CONFIG_FILE="config.ini"
+                                     									 
+parser = ConfigParser.ConfigParser()
+parser.read(CONFIG_FILE)
+
+MARKLOGIC_EXE = parser.get("Software","MARKLOGIC_EXE")
+MARKLOGIC_DOWNLOAD_URL=parser.get("Software","MARKLOGIC_DOWNLOAD_URL")
+MARKLOGIC_ROOT = parser.get("Software","MARKLOGIC_INSTALL_DIR")								 
+
+PYTHON_DOWNLOAD_URL=parser.get("Software","PYTHON_DOWNLOAD_URL")
+PYTHON_EXE=parser.get("Software","PYTHON_EXE")
+PYTHON_INSTALL_DIR=parser.get("Software","PYTHON_INSTALL_DIR")
+INSTALL_DIR=parser.get("Configuration","INSTALL_DIR")
+RSA_PRIVATE_KEY=parser.get("Configuration","RSA_PRIVATE_KEY")
+
+HOST_FILE = parser.get("Constants","HOST_FILE")
+HOST_COUNT = int(parser.get("Configuration","HOST_COUNT"))
+
+ADMIN_USER_NAME=parser.get("Configuration","ADMIN_USER_NAME")
+ADMIN_PASSWORD=parser.get("Configuration","ADMIN_PASSWORD")
+
+CLUSTER_NAME=parser.get("Configuration","CLUSTER_NAME")
+
+LICENSE_KEY = parser.get("License Details","LICENSE_KEY")
+LICENSEE = parser.get("License Details","LICENSEE")
+ACCEPTED_AGREEMENT = parser.get("License Details","LICENSE_TYPE")
+
+

@@ -1,14 +1,5 @@
 import boto
-import ConfigParser
-
-# Configuration
-CONFIG_FILE="config.ini"
-                                     									 
-parser = ConfigParser.ConfigParser()
-parser.read(CONFIG_FILE)
-
-HOST_COUNT = int(parser.get("Configuration","HOST_COUNT"))
-HOST_FILE = parser.get("Constants","HOST_FILE")
+from MarkLogicEC2Config import HOST_FILE,HOST_COUNT
 
 # Command to enable powershell on remote host
 cmd = '<powershell>Enable-PSRemoting -Force</powershell>'

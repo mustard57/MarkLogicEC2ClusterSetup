@@ -1,21 +1,5 @@
-import os
-import sys
-import ConfigParser
-import time
-
-def sys(message, cmd):
-	print(message)
-	os.system(cmd)
-	time.sleep(10)
-
-
-# Configuration
-CONFIG_FILE="config.ini"
-                                     									 
-parser = ConfigParser.ConfigParser()
-parser.read(CONFIG_FILE)
-
-HOST_FILE = parser.get("Constants","HOST_FILE")
+from MarkLogicEC2Config import HOST_FILE
+from MarkLogicEC2Lib import sys
 
 f = open(HOST_FILE)
 

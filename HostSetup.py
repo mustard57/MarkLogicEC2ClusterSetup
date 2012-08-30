@@ -1,9 +1,9 @@
 import boto
 import rsa
-import ConfigParser
 import os
 import sys
 import time
+from MarkLogicEC2Config import MARKLOGIC_EXE,MARKLOGIC_DOWNLOAD_URL,PYTHON_DOWNLOAD_URL,PYTHON_EXE,PYTHON_INSTALL_DIR,INSTALL_DIR,RSA_PRIVATE_KEY
 
 def get_instance(instance_id):
 	instance=None
@@ -15,26 +15,18 @@ def get_instance(instance_id):
 HOST_NAME = sys.argv[1]
 
 # Constants
+HTML_DIR="html"
+MSTSC_DIR="mstsc"
 POWERSHELL_DIR = "pws"
 SLEEP_PERIOD = 30
-
-# Configuration
-CONFIG_FILE="config.ini"
-                                     									 
-parser = ConfigParser.ConfigParser()
-parser.read(CONFIG_FILE)
-
-MARKLOGIC_EXE = parser.get("Software","MARKLOGIC_EXE")
-MARKLOGIC_DOWNLOAD_URL=parser.get("Software","MARKLOGIC_DOWNLOAD_URL")
-PYTHON_DOWNLOAD_URL=parser.get("Software","PYTHON_DOWNLOAD_URL")
-PYTHON_EXE=parser.get("Software","PYTHON_EXE")
-PYTHON_INSTALL_DIR=parser.get("Software","PYTHON_INSTALL_DIR")
-INSTALL_DIR=parser.get("Configuration","INSTALL_DIR")
-RSA_PRIVATE_KEY=parser.get("Configuration","RSA_PRIVATE_KEY")
 
 # Set up powershell dir
 if not os.path.isdir(POWERSHELL_DIR):
 	os.makedirs(POWERSHELL_DIR)
+if not os.path.isdir(HTML_DIR):
+	os.makedirs(HTML_DIR)
+if not os.path.isdir(MSTSC_DIR):
+	os.makedirs(MSTSC_DIR)
 
 dns_name = instance_id = password = ""
 
@@ -53,7 +45,10 @@ while True:
 
 	if instance.state <> "running":
 		print "Instance not yet in running state"
+	else:
+		break
 
+while True:		
 	dns_name =  instance.public_dns_name
 	instance_id =  instance.id
 
@@ -102,6 +97,8 @@ f.write('$session = new-pssession -computername '+dns_name + ' -credential $cred
 f.write("net use \\\\"+dns_name+" '" + password + "' /user:Administrator\n")
 f.write("copy-item -force -path for_remote\* -destination \\\\"+dns_name+"\\"+INSTALL_DIR.replace(":","$")+"\n")
 f.write("copy-item -force -path config.ini -destination \\\\"+dns_name+"\\"+INSTALL_DIR.replace(":","$")+"\n")
+f.write("copy-item -force -path MarkLogicEC2Config.py -destination \\\\"+dns_name+"\\"+INSTALL_DIR.replace(":","$")+"\n")
+f.write("copy-item -force -path MarkLogicEC2Lib.py -destination \\\\"+dns_name+"\\"+INSTALL_DIR.replace(":","$")+"\n")
 f.write("invoke-command -session $session -filepath pws\downloadpython.ps1\n")	
 f.write("invoke-command -session $session -filepath pws\downloadmarklogic.ps1\n")	
 f.write("sleep 30\n")
@@ -111,6 +108,18 @@ f.write("sleep 60\n")
 f.write("echo 'setting up MarkLogic'\n")
 f.write("invoke-command -session $session {cd " + INSTALL_DIR + " ; " + PYTHON_INSTALL_DIR + "\\python MarkLogicSetup.py}\n")
 f.write("invoke-command -session $session {netsh firewall set opmode disable}\n")
+f.close()
+
+# Create admin console link
+f = open(HTML_DIR + "\\" + dns_name + ".admin.html","w")
+f.write("<html><head><script>window.location = 'http://" + dns_name +":8001';</script></head><body></body></html>")
+f.close()
+
+# Create rdp link
+f = open(MSTSC_DIR + "\\" + dns_name + ".rdp","w")
+f.write("auto connect:i:1\n")
+f.write("full address:s:"+dns_name+"\n")
+f.write("username:s:Administrator\n")
 f.close()
 
 print "Finishing "+dns_name+" config at "+time.strftime("%H:%M:%S", time.gmtime())
