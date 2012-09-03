@@ -42,7 +42,11 @@ def clearDirectory(dirName):
 	if os.path.isdir(dirName):
 		for file in os.listdir(dirName):
 			os.remove(dirName + "/" + file)
-		
+
+def removeDirectory(dirName):
+	if os.path.isdir(dirName):
+		os.rmdir(dirName)
+			
 def checkDirectory(dirName):
 	if not os.path.isdir(dirName):
 		os.makedirs(dirName)
@@ -58,4 +62,10 @@ def clearDirectories():
 	clearDirectory(HTML_DIR)
 	clearDirectory(MSTSC_DIR)
 	clearDirectory(SESSION_DIR)
+
+def removeDirectories():
+	removeDirectory(POWERSHELL_DIR)
+	removeDirectory(HTML_DIR)
+	removeDirectory(MSTSC_DIR)
+	removeDirectory(SESSION_DIR)
 	
