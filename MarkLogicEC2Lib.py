@@ -3,7 +3,7 @@ import sys
 import time
 import urllib
 import urllib2
-from MarkLogicEC2Config import ADMIN_USER_NAME,ADMIN_PASSWORD
+from MarkLogicEC2Config import ADMIN_USER_NAME,ADMIN_PASSWORD,POWERSHELL_DIR,HTML_DIR,MSTSC_DIR,SESSION_DIR
 
 EC2_RESOLUTION_URL = "http://169.254.169.254/2009-04-04/meta-data/public-hostname"
 
@@ -37,3 +37,25 @@ def getEC2Name():
 	response = urllib2.urlopen(request)	
 	data = response.read().decode()	
 	return data
+
+def clearDirectory(dirName):
+	if os.path.isdir(dirName):
+		for file in os.listdir(dirName):
+			os.remove(dirName + "/" + file)
+		
+def checkDirectory(dirName):
+	if not os.path.isdir(dirName):
+		os.makedirs(dirName)
+
+def checkDirectories():
+	checkDirectory(POWERSHELL_DIR)
+	checkDirectory(HTML_DIR)
+	checkDirectory(MSTSC_DIR)
+	checkDirectory(SESSION_DIR)
+
+def clearDirectories():
+	clearDirectory(POWERSHELL_DIR)
+	clearDirectory(HTML_DIR)
+	clearDirectory(MSTSC_DIR)
+	clearDirectory(SESSION_DIR)
+	

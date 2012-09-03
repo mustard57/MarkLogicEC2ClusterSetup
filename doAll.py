@@ -1,12 +1,15 @@
 from MarkLogicEC2Config import HOST_FILE
-from MarkLogicEC2Lib import sys
+import MarkLogicEC2Lib
+
+# Clear out powershell/html/mstsc directories
+MarkLogicEC2Lib.clearDirectories()
 
 f = open(HOST_FILE)
 
 for line in f.xreadlines():
 	host =  line.strip()
-	sys("Setting up config for "+host,"python HostSetup.py "+host)
-	sys("Setting up "+host,"powershell -file pws\server-setup.ps1")
+	MarkLogicEC2Lib.sys("Setting up config for "+host,"python HostSetup.py "+host)
+	MarkLogicEC2Lib.sys("Setting up "+host,"powershell -file pws\server-setup.ps1")
 	
-sys("Configuring cluster","python doClusterStuff.py")
+MarkLogicEC2Lib.sys("Configuring cluster","python doClusterStuff.py")
 	
