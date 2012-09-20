@@ -1,2 +1,7 @@
 pws
 host_file.txt
+*.pyc
+html
+mstsc
+root_ip.txt
+sessions
