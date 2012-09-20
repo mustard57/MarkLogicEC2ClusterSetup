@@ -19,6 +19,7 @@ RSA_PRIVATE_KEY=parser.get("Configuration","RSA_PRIVATE_KEY")
 HOST_FILE = parser.get("Constants","HOST_FILE")
 HOST_COUNT = int(parser.get("Configuration","HOST_COUNT"))
 
+ROOT_IP_FILE = parser.get("Constants","ROOT_IP_FILE")
 ADMIN_USER_NAME=parser.get("Configuration","ADMIN_USER_NAME")
 ADMIN_PASSWORD=parser.get("Configuration","ADMIN_PASSWORD")
 MSTSC_PASSWORD=parser.get("Configuration","MSTSC_PASSWORD")
