@@ -77,7 +77,7 @@ f.close()
 # Create server setup script
 f = open(MarkLogicEC2Config.POWERSHELL_DIR  +"\\server-setup.ps1","w")
 f.write('Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System -Name LocalAccountTokenFilterPolicy -Value 1 -Type DWord\n')
-f.write('Set-Item WSMan:\\localhost\\Client\TrustedHosts -Value ' + dns_name + " -Force -Concatenate\n")
+f.write('Set-Item WSMan:\\localhost\\Client\TrustedHosts -Value ' + dns_name + " -Force\n")
 f.write("$pw = convertto-securestring -AsPlainText -Force -String '"+password+"'\n")
 f.write('$cred = new-object -typename System.Management.Automation.PSCredential -argumentlist "'+instance_id+'\Administrator",$pw\n')
 f.write('$session = new-pssession -computername '+dns_name + ' -credential $cred\n')
@@ -94,6 +94,7 @@ f.write("invoke-command -session $session {"+ MarkLogicEC2Config.INSTALL_DIR + M
 f.write("sleep 60\n")
 f.write("echo 'setting up MarkLogic'\n")
 f.write("invoke-command -session $session {cd " + MarkLogicEC2Config.INSTALL_DIR + " ; " + MarkLogicEC2Config.PYTHON_INSTALL_DIR + "\\python MarkLogicSetup.py}\n")
+f.write("Set-Service MarkLogic -startuptype 'Automatic'")
 f.write("invoke-command -session $session {netsh firewall set opmode disable}\n")
 if(MarkLogicEC2Config.MSTSC_PASSWORD):
 	f.write('invoke-command -session $session {$account = [ADSI]("WinNT://$env:COMPUTERNAME/Administrator,user") ; $account.psbase.invoke("setpassword","'+MarkLogicEC2Config.MSTSC_PASSWORD+'") }\n')

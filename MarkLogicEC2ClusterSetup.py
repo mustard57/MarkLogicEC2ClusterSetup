@@ -6,6 +6,7 @@ import time
 import os
 import glob
 import rsa
+import re
 
 SLEEP_PERIOD = 30
 ec2 = boto.connect_ec2()
@@ -16,6 +17,29 @@ def getAvailableHosts():
 	for line in f.xreadlines():
 		hosts.append(line.strip())
 	return hosts
+
+def getHostForRequest(input):
+	host = ""
+	hosts = getAvailableHosts()
+	if(re.compile('^\d+$').match(input)):
+		if(int(input) <= len(hosts)):
+			host = hosts[int(input) - 1]
+		else:
+			print "The host number you requested does not exist. Please choose from " + str(len(hosts)) + " or below"
+			exit()
+	else:
+		if(input in hosts):
+			host = input
+		else:
+			print "The host "+input+" does not exist"
+			exit()
+	return host
+
+def nameHost(host):	
+	dns_name = getInstance(host).public_dns_name
+	HOST_ARGS = { 'HOST-NAME':dns_name }
+	MarkLogicEC2Lib.configureAuthHttpProcess(dns_name)
+	MarkLogicEC2Lib.httpProcess("Setting host name",MarkLogicEC2Lib.adminURL(dns_name) +"set-host-name.xqy", HOST_ARGS)
 
 def isRootHost(host):
 	return os.path.isfile(MarkLogicEC2Config.HOST_FILE) and (len(getAvailableHosts()) > 0) and (getAvailableHosts()[0] == host)
@@ -39,14 +63,16 @@ def startInstance(host):
 		print "Starting host "+host
 		ec2.start_instances(host)
 		waitForRunningState(host)
-		if(isRootHost(host) and getRootIP()):
-			getRootElasticIP().associate(host)
-			print "Elastic IP added for root host " + host + " - " + getRootIP()
+		#if(isRootHost(host) and getRootIP()):
+		#	getRootElasticIP().associate(host)
+		#	print "Elastic IP added for root host " + host + " - " + getRootIP()
 		createRDPLink(host)
 		createAdminConsoleLink(host)
 		createSessionLink(host)
-		# nameHost(host)
-		print "Host started"				
+		createReinstallScript(host)		
+		print "Host started"						
+		MarkLogicEC2Lib.sys("Reinstalling for "+host,"powershell -file " + reinstallFileName(host))		
+		nameHost(host)
 	else:
 		print "Host " + host + " already running"
 		
@@ -54,9 +80,10 @@ def stopInstance(host):
 	if(not(isStopped(host))):
 		print "Stopping host "+host
 		ec2.stop_instances(host)
-		removeRDPLink(host)
-		removeAdminConsoleLink(host)
-		removeSessionLink(host)
+		removeFile(RDPFileName(host))
+		removeFile(adminFileName(host))
+		removeFile(sessionFileName(host))
+		removeFile(reinstallFileName(host))
 		waitForStoppedState(host)		
 		print "Host stopped"				
 	else:
@@ -113,23 +140,29 @@ def waitForStoppedState(host):
 		else:
 			print "Instance not yet in stopped state"
 		time.sleep(SLEEP_PERIOD)
-
+		
 def clean():
 	if os.path.isfile(MarkLogicEC2Config.HOST_FILE):
 		for host in getAvailableHosts():		
 			getInstance(host).terminate()
+			cleanHost(host)
 			
 	for address in ec2.get_all_addresses():
 		address.release()
 
-	clearDirectories()	
 	removeDirectories()
 
-	if os.path.isfile(MarkLogicEC2Config.HOST_FILE):
-		os.remove(MarkLogicEC2Config.HOST_FILE)
+	removeFile(MarkLogicEC2Config.HOST_FILE)
 	for file in glob.glob("*.pyc"):
 		os.remove(file)
 
+def cleanHost(host):
+	dns_name = getInstance(host).public_dns_name	
+	getInstance(host).terminate()
+	
+	for file in (adminFileName(host),sessionFileName(host),reinstallFileName(host),RDPFileName(host)):
+		removeFile(file)
+	
 def clearDirectory(dirName):
 	if os.path.isdir(dirName):
 		for file in os.listdir(dirName):
@@ -142,18 +175,6 @@ def removeDirectory(dirName):
 def checkDirectory(dirName):
 	if not os.path.isdir(dirName):
 		os.makedirs(dirName)
-
-def checkDirectories():
-	checkDirectory(MarkLogicEC2Config.POWERSHELL_DIR)
-	checkDirectory(MarkLogicEC2Config.HTML_DIR)
-	checkDirectory(MarkLogicEC2Config.MSTSC_DIR)
-	checkDirectory(MarkLogicEC2Config.SESSION_DIR)
-
-def clearDirectories():
-	clearDirectory(MarkLogicEC2Config.POWERSHELL_DIR)
-	clearDirectory(MarkLogicEC2Config.HTML_DIR)
-	clearDirectory(MarkLogicEC2Config.MSTSC_DIR)
-	clearDirectory(MarkLogicEC2Config.SESSION_DIR)
 
 def removeDirectories():
 	removeDirectory(MarkLogicEC2Config.POWERSHELL_DIR)
@@ -229,6 +250,7 @@ def setupHost(host):
 	f.write("copy-item -force -path MarkLogicEC2Config.py -destination \\\\"+dns_name+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"\n")
 	f.write("copy-item -force -path MarkLogicEC2Lib.py -destination \\\\"+dns_name+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"\n")
 	f.write("invoke-command -session $session -filepath pws\downloadpython.ps1\n")	
+	
 	f.write("invoke-command -session $session -filepath pws\downloadmarklogic.ps1\n")	
 	f.write("sleep 30\n")
 	f.write("echo 'installing python'\n")
@@ -248,7 +270,7 @@ def setupHost(host):
 	print dns_name
 	createRDPLink(host)
 	createAdminConsoleLink(host)
-	createSessionScript(dns_name,password,instance_id)
+	createSessionLink(host)
 	
 	print "Finishing "+dns_name+" config at "+time.strftime("%H:%M:%S", time.gmtime())
 
@@ -264,62 +286,25 @@ def createMarkLogicDownloadScript():
 		f.write('$clnt.DownloadFile($url,$file)\n')
 		f.close()
 
-def	createAdminConsoleLink(dns_name):
-	f = open(MarkLogicEC2Config.HTML_DIR + "\\" + dns_name + ".admin.html","w")
-	f.write("<html><head><script>window.location = 'http://" + dns_name +":8001';</script></head><body></body></html>")
-	f.close()
-
-def	createRDPLink(dns_name):
-	checkDirectory(MarkLogicEC2Config.MSTSC_DIR)	
-	f = open(MarkLogicEC2Config.MSTSC_DIR + "\\" + dns_name + ".rdp","w")
-	f.write("auto connect:i:1\n")
-	f.write("full address:s:"+dns_name+"\n")
-	f.write("username:s:Administrator\n")
-	f.close()
-
-def createSessionScript(dns_name,password,instance_id):
-	checkDirectory(MarkLogicEC2Config.SESSION_DIR)	
-	f = open(MarkLogicEC2Config.SESSION_DIR  +"\\"+dns_name+".session.ps1","w")
-	f.write('Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System -Name LocalAccountTokenFilterPolicy -Value 1 -Type DWord\n')
-	f.write('Set-Item WSMan:\\localhost\\Client\TrustedHosts -Value ' + dns_name + " -Force -Concatenate\n")
-	f.write("$pw = convertto-securestring -AsPlainText -Force -String '"+password+"'\n")
-	f.write('$cred = new-object -typename System.Management.Automation.PSCredential -argumentlist "'+instance_id+'\Administrator",$pw\n')
-	f.write('$session = new-pssession -computername '+dns_name + ' -credential $cred\n')
-	f.write('Enter-PSSession $session\n')
-	f.close()
-	
 def createAdminConsoleLink(host):
 	dns_name = getInstance(host).public_dns_name	
-	checkDirectory(MarkLogicEC2Config.HTML_DIR)	
-	f = open(MarkLogicEC2Config.HTML_DIR + "\\" + dns_name + ".admin.html","w")
+	f = open(adminFileName(host),"w")
 	f.write("<html><head><script>window.location = 'http://" + dns_name +":8001';</script></head><body></body></html>")
 	f.close()
-
-def removeAdminConsoleLink(host):
-	dns_name = getInstance(host).public_dns_name	
-	if os.path.isfile(MarkLogicEC2Config.HTML_DIR + "\\" + dns_name + ".admin.html"):	
-		os.remove(MarkLogicEC2Config.HTML_DIR + "\\" + dns_name + ".admin.html")
 	
 def createRDPLink(host):
 	dns_name = getInstance(host).public_dns_name	
-	checkDirectory(MarkLogicEC2Config.MSTSC_DIR)	
-	f = open(MarkLogicEC2Config.MSTSC_DIR + "\\" + dns_name + ".rdp","w")
+	f = open(RDPFileName(host),"w")
 	f.write("auto connect:i:1\n")
 	f.write("full address:s:"+dns_name+"\n")
 	f.write("username:s:Administrator\n")
 	f.close()
-
-def removeRDPLink(host):
-	dns_name = getInstance(host).public_dns_name	
-	if os.path.isfile(MarkLogicEC2Config.MSTSC_DIR + "\\" + dns_name + ".rdp"):
-		os.remove(MarkLogicEC2Config.MSTSC_DIR + "\\" + dns_name + ".rdp")
 	
 def createSessionLink(host):	
 	dns_name = getInstance(host).public_dns_name	
-	checkDirectory(MarkLogicEC2Config.SESSION_DIR)		
 	password = getPassword(host)
 	instance_id = getInstance(host).id
-	f = open(MarkLogicEC2Config.SESSION_DIR  +"\\"+dns_name+".session.ps1","w")
+	f = open(sessionFileName(host),"w")
 	f.write('Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System -Name LocalAccountTokenFilterPolicy -Value 1 -Type DWord\n')
 	f.write('Set-Item WSMan:\\localhost\\Client\TrustedHosts -Value ' + dns_name + " -Force -Concatenate\n")
 	f.write("$pw = convertto-securestring -AsPlainText -Force -String '"+password+"'\n")
@@ -327,12 +312,24 @@ def createSessionLink(host):
 	f.write('$session = new-pssession -computername '+dns_name + ' -credential $cred\n')
 	f.write('Enter-PSSession $session\n')
 	f.close()
-	
-def removeSessionLink(host):
-	dns_name = getInstance(host).public_dns_name	
-	if os.path.isfile(MarkLogicEC2Config.SESSION_DIR + "\\" + dns_name + ".session.ps1"):
-		os.remove(MarkLogicEC2Config.SESSION_DIR + "\\" + dns_name + ".session.ps1")
 
+def createReinstallScript(host):	
+	dns_name = getInstance(host).public_dns_name	
+	password = getPassword(host)
+	instance_id = getInstance(host).id
+	f = open(reinstallFileName(host),"w")
+	f.write('Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System -Name LocalAccountTokenFilterPolicy -Value 1 -Type DWord\n')
+	f.write('Set-Item WSMan:\\localhost\\Client\TrustedHosts -Value ' + dns_name + " -Force -Concatenate\n")
+	f.write("$pw = convertto-securestring -AsPlainText -Force -String '"+password+"'\n")
+	f.write('$cred = new-object -typename System.Management.Automation.PSCredential -argumentlist "'+instance_id+'\Administrator",$pw\n')
+	f.write('$session = new-pssession -computername '+dns_name + ' -credential $cred\n')
+	f.write('echo "Reinstalling MarkLogic"\n')
+	f.write('invoke-command -session $session {net stop MarkLogic}\n')
+	f.write('invoke-command -session $session {cd "c:\program files\MarkLogic\Data"}\n')
+	f.write('invoke-command -session $session {Remove-Item *.xml}\n')
+	f.write('invoke-command -session $session {Remove-Item  Forests\Security -recurse}\n')
+	f.write('invoke-command -session $session {cd c:\users\\administrator\ ; c:\python26\python MarkLogicSetup.py}\n')	
+	f.close()
 
 def createPythonDownloadScript():	
 	checkDirectory(MarkLogicEC2Config.POWERSHELL_DIR)
@@ -354,7 +351,26 @@ def getPassword(host):
 		password = getDefaultPassword(host)
 	return password
 
+def utilityFileName(dir,host,suffix):
+	checkDirectory(dir)
+	return dir  +"\\"+getInstance(host).public_dns_name+"."+ suffix
 
+def adminFileName(host):
+	return utilityFileName(MarkLogicEC2Config.HTML_DIR,host,"admin.html")
+
+def RDPFileName(host):
+	return utilityFileName(MarkLogicEC2Config.MSTSC_DIR,host,"rdp")
+
+def sessionFileName(host):
+	return utilityFileName(MarkLogicEC2Config.SESSION_DIR,host,"session.ps1")
+
+def reinstallFileName(host):
+	return utilityFileName(MarkLogicEC2Config.POWERSHELL_DIR,host,"reinstall.ps1")
+
+def removeFile(fileName):
+	if os.path.isfile(fileName):
+		os.remove(fileName)
+	
 THAW_MODE = "thaw"
 HELP_MODE = "help"
 FREEZE_MODE  = "freeze"
@@ -376,28 +392,28 @@ print "Run mode is "+mode
 
 if(mode == THAW_MODE):
 	if(len(sys.argv) > 2):
-		host = MarkLogicEC2Lib.getHostForRequest(sys.argv[2])
+		host = getHostForRequest(sys.argv[2])
 		startInstance(host)
 	else:
 		for host in getAvailableHosts():
 			startInstance(host)
 elif(mode == FREEZE_MODE):
 	if(len(sys.argv) > 2):
-		host = MarkLogicEC2Lib.getHostForRequest(sys.argv[2])
+		host = getHostForRequest(sys.argv[2])
 		stopInstance(host)
 	else:
 		for host in getAvailableHosts():
 			stopInstance(host)
 elif(mode == STATUS_MODE):
 	if(len(sys.argv) > 2):
-		host = MarkLogicEC2Lib.getHostForRequest(sys.argv[2])
+		host = getHostForRequest(sys.argv[2])
 		print "host "+host+ "is in the " + getInstanceStatus(host) + " state with dns " + getInstance(host).public_dns_name
 	else:
 		for host in getAvailableHosts():
 			print "Host "+host+ "is in the " + getInstanceStatus(host) + " state with dns " + getInstance(host).public_dns_name
 elif(mode == SETUP_MODE):
 	if(len(sys.argv) > 2):
-		host = MarkLogicEC2Lib.getHostForRequest(sys.argv[2])
+		host = getHostForRequest(sys.argv[2])
 		setupHost(host)
 		MarkLogicEC2Lib.sys("Setting up "+host,"powershell -file pws\server-setup.ps1")		
 	else:
@@ -409,34 +425,39 @@ elif(mode == HELP_MODE):
 elif(mode == CLUSTER_MODE):
 	ROOT_HOST = ""
 
-	for host in MarkLogicEC2Lib.getAvailableHosts():
-		MarkLogicEC2Lib.nameHost(host)		
-		MarkLogicEC2Lib.httpProcess("Restarting...","http://" + MarkLogicEC2Lib.getInstance(host).public_dns_name + ":8001/restart.xqy")
+	for host in getAvailableHosts():
+		nameHost(host)		
+		MarkLogicEC2Lib.httpProcess("Restarting...","http://" + getInstance(host).public_dns_name + ":8001/restart.xqy")
 	
-	for host in MarkLogicEC2Lib.getAvailableHosts():
-		MarkLogicEC2Lib.configureAuthHttpProcess(MarkLogicEC2Lib.getInstance(host).public_dns_name)	
+	for host in getAvailableHosts():
+		MarkLogicEC2Lib.configureAuthHttpProcess(getInstance(host).public_dns_name)	
 		if ROOT_HOST:
-			args = {'server' : ROOT_HOST, 'joiner' : MarkLogicEC2Lib.getInstance(host).public_dns_name }
-			MarkLogicEC2Lib.httpProcess("Joining Cluster","http://" + MarkLogicEC2Lib.getInstance(host).public_dns_name + ":8001/join-cluster.xqy", args)
+			args = {'server' : ROOT_HOST, 'joiner' : getInstance(host).public_dns_name }
+			MarkLogicEC2Lib.httpProcess("Joining Cluster","http://" + getInstance(host).public_dns_name + ":8001/join-cluster.xqy", args)
 		else:
-			ROOT_HOST = MarkLogicEC2Lib.getInstance(host).public_dns_name
+			ROOT_HOST = getInstance(host).public_dns_name
 
 	ROOT_HOST = ""
 
-	for host in MarkLogicEC2Lib.getAvailableHosts():
+	for host in getAvailableHosts():
 		if ROOT_HOST:
-			args = {'server' : ROOT_HOST, 'joiner' : MarkLogicEC2Lib.getInstance(host).public_dns_name }
+			args = {'server' : ROOT_HOST, 'joiner' : getInstance(host).public_dns_name }
 			MarkLogicEC2Lib.configureAuthHttpProcess(ROOT_HOST)
 			MarkLogicEC2Lib.httpProcess("Joining Cluster II","http://" + ROOT_HOST + ":8001/transfer-cluster-config.xqy",args)
-			MarkLogicEC2Lib.configureAuthHttpProcess(MarkLogicEC2Lib.getInstance(host).public_dns_name)
-			MarkLogicEC2Lib.httpProcess("Restarting...","http://" + MarkLogicEC2Lib.getInstance(host).public_dns_name + ":8001/restart.xqy")
+			MarkLogicEC2Lib.configureAuthHttpProcess(getInstance(host).public_dns_name)
+			MarkLogicEC2Lib.httpProcess("Restarting...","http://" + getInstance(host).public_dns_name + ":8001/restart.xqy")
 		else:
-			ROOT_HOST = MarkLogicEC2Lib.getInstance(host).public_dns_name
+			ROOT_HOST = getInstance(host).public_dns_name
 
 	MarkLogicEC2Lib.configureAuthHttpProcess(ROOT_HOST)
-	MarkLogicEC2Lib.httpProcess("Cluster name","http://" + ROOT_HOST + ":8001/set-cluster-name.xqy",{"CLUSTER-NAME":CLUSTER_NAME})	
+	MarkLogicEC2Lib.httpProcess("Cluster name","http://" + ROOT_HOST + ":8001/set-cluster-name.xqy",{"CLUSTER-NAME":MarkLogicEC2Config.CLUSTER_NAME})	
 elif(mode == CLEAN_MODE):
-	clean()
+	if(len(sys.argv) > 2):
+		host = getHostForRequest(sys.argv[2])
+		cleanHost(host)
+	else:
+		1	
+		#clean()
 elif(mode == CREATE_MODE):
 	createHost()
 elif(mode == "address"):	

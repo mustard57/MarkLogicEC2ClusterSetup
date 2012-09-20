@@ -3,7 +3,6 @@ import sys
 import time
 import urllib
 import urllib2
-import re
 import MarkLogicEC2Config
 
 # Constants
@@ -42,39 +41,10 @@ def getEC2Name():
 	return data
 
 
-def getHostForRequest(input):
-	host = ""
-	hosts = getAvailableHosts()
-	if(re.compile('^\d+$').match(input)):
-		if(int(input) <= len(hosts)):
-			host = hosts[int(input) - 1]
-		else:
-			print "The host number you requested does not exist. Please choose from " + str(len(hosts)) + " or below"
-			exit()
-	else:
-		if(input in hosts):
-			host = input
-		else:
-			print "The host "+input+" does not exist"
-			exit()
-	return host
 	
 def adminURL(host_name):
 	return "http://"+host_name+":8001/"
 	
-def nameHost(host):	
-	dns_name = getInstance(host).public_dns_name
-	HOST_ARGS = { 'HOST-NAME':dns_name }
-	configureAuthHttpProcess(dns_name)
-	httpProcess("Setting host name",adminURL(dns_name) +"set-host-name.xqy", HOST_ARGS)
-
-def getPassword(host):
-	password = ""
-	if(MarkLogicEC2Config.MSTSC_PASSWORD):
-		password = MarkLogicEC2Config.MSTSC_PASSWORD
-	else:
-		password = getDefaultPassword(host)
-	return password
 
 	
 	
