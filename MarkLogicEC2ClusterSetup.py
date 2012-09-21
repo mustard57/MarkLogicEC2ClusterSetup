@@ -12,11 +12,24 @@ SLEEP_PERIOD = 30
 ec2 = boto.connect_ec2()
 
 def getAvailableHosts():			
-	f = open(MarkLogicEC2Config.HOST_FILE)
 	hosts = []
-	for line in f.xreadlines():
-		hosts.append(line.strip())
+	if(os.path.isfile(MarkLogicEC2Config.HOST_FILE)):
+		f = open(MarkLogicEC2Config.HOST_FILE)
+		for line in f.xreadlines():
+			hosts.append(line.strip())
 	return hosts
+
+def getIPs():			
+	ips = []
+	if(os.path.isfile(MarkLogicEC2Config.ELASTIC_IP_FILE)):
+		f = open(MarkLogicEC2Config.ELASTIC_IP_FILE)
+		for line in f.xreadlines():
+			ips.append(line.strip())
+	return ips
+	
+	
+def getHostIP(host)	:
+	return getIPs()[getAvailableHosts().index(host)]
 
 def getHostForRequest(input):
 	host = ""
@@ -44,17 +57,9 @@ def nameHost(host):
 def isRootHost(host):
 	return os.path.isfile(MarkLogicEC2Config.HOST_FILE) and (len(getAvailableHosts()) > 0) and (getAvailableHosts()[0] == host)
 
-def getRootIP():
-	ip = ""
-	if os.path.isfile(MarkLogicEC2Config.ROOT_IP_FILE):
-		f = open(MarkLogicEC2Config.ROOT_IP_FILE)
-		ip = f.readline()
-		f.close()
-	return str(ip)
-
-def getRootElasticIP():
+def getElasticIP(host):
 	for address in ec2.get_all_addresses():
-		if str(address) == getRootIP():
+		if address.public_ip == getHostIP(host):
 			break
 	return address				
 	
@@ -63,16 +68,14 @@ def startInstance(host):
 		print "Starting host "+host
 		ec2.start_instances(host)
 		waitForRunningState(host)
-		#if(isRootHost(host) and getRootIP()):
-		#	getRootElasticIP().associate(host)
-		#	print "Elastic IP added for root host " + host + " - " + getRootIP()
+		if(MarkLogicEC2Config.USE_ELASTIC_IP):
+			getElasticIP(host).associate(host)
+			print "Elastic IP added for host " + host + " - " + str(getElasticIP(host))
 		createRDPLink(host)
 		createAdminConsoleLink(host)
 		createSessionLink(host)
 		createReinstallScript(host)		
 		print "Host started"						
-		MarkLogicEC2Lib.sys("Reinstalling for "+host,"powershell -file " + reinstallFileName(host))		
-		nameHost(host)
 	else:
 		print "Host " + host + " already running"
 		
@@ -144,12 +147,8 @@ def waitForStoppedState(host):
 def clean():
 	if os.path.isfile(MarkLogicEC2Config.HOST_FILE):
 		for host in getAvailableHosts():		
-			getInstance(host).terminate()
 			cleanHost(host)
 			
-	for address in ec2.get_all_addresses():
-		address.release()
-
 	removeDirectories()
 
 	removeFile(MarkLogicEC2Config.HOST_FILE)
@@ -159,6 +158,7 @@ def clean():
 def cleanHost(host):
 	dns_name = getInstance(host).public_dns_name	
 	getInstance(host).terminate()
+	getElasticIP(host).release()
 	
 	for file in (adminFileName(host),sessionFileName(host),reinstallFileName(host),RDPFileName(host)):
 		removeFile(file)
@@ -194,9 +194,10 @@ def createHost():
 	f.write(instance.id+"\n")
 	f.close()	
 	
-	if isRootHost(instance.id):
+	if(MarkLogicEC2Config.USE_ELASTIC_IP):
 		allocateIP(instance.id)
-	
+		print "Elastic IP added for host " + instance.id + " - " + getHostIP(instance.id)
+		
 
 def allocateIP(host):
 	if(len(ec2.get_all_addresses()) >= MarkLogicEC2Config.EC2_ELASTIC_IP_LIMIT):
@@ -205,7 +206,7 @@ def allocateIP(host):
 		ip = ec2.allocate_address() 	
 		ec2.associate_address(instance_id=host,public_ip=ip.public_ip)
 		print "Elastic IP "+ip.public_ip+" added"
-		f = open(MarkLogicEC2Config.ROOT_IP_FILE,"w")
+		f = open(MarkLogicEC2Config.ELASTIC_IP_FILE,"a")
 		f.write(ip.public_ip+"\n")
 		f.close()	
 	
@@ -379,8 +380,9 @@ CLUSTER_MODE = "cluster"
 CLEAN_MODE = "clean"
 CREATE_MODE = "create"
 SETUP_MODE = "setup"
+REFRESH_MODE = "refresh"
 
-MODES = (THAW_MODE,HELP_MODE,FREEZE_MODE,CLUSTER_MODE,CLEAN_MODE,CREATE_MODE,SETUP_MODE,STATUS_MODE)
+MODES = (THAW_MODE,HELP_MODE,FREEZE_MODE,CLUSTER_MODE,CLEAN_MODE,CREATE_MODE,SETUP_MODE,STATUS_MODE,REFRESH_MODE)
 
 # Get mode
 if(len(sys.argv) > 1):
@@ -424,10 +426,6 @@ elif(mode == HELP_MODE):
 	print "Available modes are "+",".join(MODES)
 elif(mode == CLUSTER_MODE):
 	ROOT_HOST = ""
-
-	for host in getAvailableHosts():
-		nameHost(host)		
-		MarkLogicEC2Lib.httpProcess("Restarting...","http://" + getInstance(host).public_dns_name + ":8001/restart.xqy")
 	
 	for host in getAvailableHosts():
 		MarkLogicEC2Lib.configureAuthHttpProcess(getInstance(host).public_dns_name)	
@@ -450,18 +448,31 @@ elif(mode == CLUSTER_MODE):
 			ROOT_HOST = getInstance(host).public_dns_name
 
 	MarkLogicEC2Lib.configureAuthHttpProcess(ROOT_HOST)
-	MarkLogicEC2Lib.httpProcess("Cluster name","http://" + ROOT_HOST + ":8001/set-cluster-name.xqy",{"CLUSTER-NAME":MarkLogicEC2Config.CLUSTER_NAME})	
+	MarkLogicEC2Lib.httpProcess("Setting cluster name to "+MarkLogicEC2Config.CLUSTER_NAME,"http://" + ROOT_HOST + ":8001/set-cluster-name.xqy",{"CLUSTER-NAME":MarkLogicEC2Config.CLUSTER_NAME})	
 elif(mode == CLEAN_MODE):
 	if(len(sys.argv) > 2):
 		host = getHostForRequest(sys.argv[2])
 		cleanHost(host)
 	else:
-		1	
-		#clean()
+		clean()
 elif(mode == CREATE_MODE):
 	createHost()
+elif(mode == REFRESH_MODE):
+	if(len(sys.argv) > 2):
+		host = getHostForRequest(sys.argv[2])
+		setupHost(host)
+		MarkLogicEC2Lib.sys("Reinstalling for "+host,"powershell -file " + reinstallFileName(host))		
+	else:
+		for host in getAvailableHosts():
+			setupHost(host)			
+			MarkLogicEC2Lib.sys("Reinstalling for "+host,"powershell -file " + reinstallFileName(host))				
 elif(mode == "address"):	
-	getRootElasticIP().associate(getAvailableHosts()[0])
+	if(len(sys.argv) > 2):
+		host = getHostForRequest(sys.argv[2])
+		allocateIP(host)
+	else:
+		for host in getAvailableHosts():
+			allocateIP(host)
 else:
 	print mode +" is not a permitted mode"
 		
