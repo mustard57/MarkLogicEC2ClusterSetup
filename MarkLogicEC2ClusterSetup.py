@@ -330,6 +330,7 @@ def createReinstallScript(host):
 	f.write('invoke-command -session $session {Remove-Item *.xml}\n')
 	f.write('invoke-command -session $session {Remove-Item  Forests\Security -recurse}\n')
 	f.write('invoke-command -session $session {cd c:\users\\administrator\ ; c:\python26\python MarkLogicSetup.py}\n')	
+	f.write("invoke-command -session $session {Set-Service MarkLogic -startuptype 'Automatic'}\n")
 	f.close()
 
 def createPythonDownloadScript():	
