@@ -461,11 +461,9 @@ elif(mode == CREATE_MODE):
 elif(mode == REFRESH_MODE):
 	if(len(sys.argv) > 2):
 		host = getHostForRequest(sys.argv[2])
-		setupHost(host)
 		MarkLogicEC2Lib.sys("Reinstalling for "+host,"powershell -file " + reinstallFileName(host))		
 	else:
 		for host in getAvailableHosts():
-			setupHost(host)			
 			MarkLogicEC2Lib.sys("Reinstalling for "+host,"powershell -file " + reinstallFileName(host))				
 elif(mode == "address"):	
 	if(len(sys.argv) > 2):
