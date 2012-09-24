@@ -158,7 +158,8 @@ def clean():
 def cleanHost(host):
 	dns_name = getInstance(host).public_dns_name	
 	getInstance(host).terminate()
-	getElasticIP(host).release()
+	if(MarkLogicEC2Config.USE_ELASTIC_IP):	
+		getElasticIP(host).release()
 	
 	for file in (adminFileName(host),sessionFileName(host),reinstallFileName(host),RDPFileName(host)):
 		removeFile(file)
@@ -169,6 +170,7 @@ def clearDirectory(dirName):
 			os.remove(dirName + "/" + file)
 
 def removeDirectory(dirName):
+	clearDirectory(dirName)
 	if os.path.isdir(dirName):
 		os.rmdir(dirName)
 			
