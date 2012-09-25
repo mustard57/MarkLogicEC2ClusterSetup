@@ -152,6 +152,7 @@ def clean():
 	removeDirectories()
 
 	removeFile(MarkLogicEC2Config.HOST_FILE)
+	removeFile(MarkLogicEC2Config.ELASTIC_IP_FILE)
 	for file in glob.glob("*.pyc"):
 		os.remove(file)
 
@@ -186,7 +187,7 @@ def removeDirectories():
 
 def createHost():
 	cmd = '<powershell>Enable-PSRemoting -Force</powershell>'	
-	reservation = ec2.run_instances(image_id='ami-71b50018',instance_type="t1.micro",key_name="HP",security_groups=["MarkLogic"],user_data=cmd)
+	reservation = ec2.run_instances(image_id='ami-71b50018',instance_type="t1."+MarkLogicEC2Config.INSTANCE_SIZE,key_name="HP",security_groups=["MarkLogic"],user_data=cmd)
 	instance = ec2.get_all_instances()[-1].instances[0]
 	print "Created instance "+ instance.id
 	
@@ -276,6 +277,32 @@ def setupHost(host):
 	createSessionLink(host)
 	
 	print "Finishing "+dns_name+" config at "+time.strftime("%H:%M:%S", time.gmtime())
+
+def cluster():	
+	ROOT_HOST = ""
+	
+	for host in getAvailableHosts():
+		MarkLogicEC2Lib.configureAuthHttpProcess(getInstance(host).public_dns_name)	
+		if ROOT_HOST:
+			args = {'server' : ROOT_HOST, 'joiner' : getInstance(host).public_dns_name }
+			MarkLogicEC2Lib.httpProcess("Joining Cluster","http://" + getInstance(host).public_dns_name + ":8001/join-cluster.xqy", args)
+		else:
+			ROOT_HOST = getInstance(host).public_dns_name
+
+	ROOT_HOST = ""
+
+	for host in getAvailableHosts():
+		if ROOT_HOST:
+			args = {'server' : ROOT_HOST, 'joiner' : getInstance(host).public_dns_name }
+			MarkLogicEC2Lib.configureAuthHttpProcess(ROOT_HOST)
+			MarkLogicEC2Lib.httpProcess("Joining Cluster II","http://" + ROOT_HOST + ":8001/transfer-cluster-config.xqy",args)
+			MarkLogicEC2Lib.configureAuthHttpProcess(getInstance(host).public_dns_name)
+			MarkLogicEC2Lib.httpProcess("Restarting...","http://" + getInstance(host).public_dns_name + ":8001/restart.xqy")
+		else:
+			ROOT_HOST = getInstance(host).public_dns_name
+
+	MarkLogicEC2Lib.configureAuthHttpProcess(ROOT_HOST)
+	MarkLogicEC2Lib.httpProcess("Setting cluster name to "+MarkLogicEC2Config.CLUSTER_NAME,"http://" + ROOT_HOST + ":8001/set-cluster-name.xqy",{"CLUSTER-NAME":MarkLogicEC2Config.CLUSTER_NAME})	
 
 def createMarkLogicDownloadScript():
 	checkDirectory(MarkLogicEC2Config.POWERSHELL_DIR)
@@ -384,8 +411,9 @@ CLEAN_MODE = "clean"
 CREATE_MODE = "create"
 SETUP_MODE = "setup"
 REFRESH_MODE = "refresh"
+ALL_MODE = "all"
 
-MODES = (THAW_MODE,HELP_MODE,FREEZE_MODE,CLUSTER_MODE,CLEAN_MODE,CREATE_MODE,SETUP_MODE,STATUS_MODE,REFRESH_MODE)
+MODES = (THAW_MODE,HELP_MODE,FREEZE_MODE,CLUSTER_MODE,CLEAN_MODE,CREATE_MODE,SETUP_MODE,STATUS_MODE,REFRESH_MODE,ALL_MODE)
 
 # Get mode
 if(len(sys.argv) > 1):
@@ -428,30 +456,7 @@ elif(mode == SETUP_MODE):
 elif(mode == HELP_MODE):		
 	print "Available modes are "+",".join(MODES)
 elif(mode == CLUSTER_MODE):
-	ROOT_HOST = ""
-	
-	for host in getAvailableHosts():
-		MarkLogicEC2Lib.configureAuthHttpProcess(getInstance(host).public_dns_name)	
-		if ROOT_HOST:
-			args = {'server' : ROOT_HOST, 'joiner' : getInstance(host).public_dns_name }
-			MarkLogicEC2Lib.httpProcess("Joining Cluster","http://" + getInstance(host).public_dns_name + ":8001/join-cluster.xqy", args)
-		else:
-			ROOT_HOST = getInstance(host).public_dns_name
-
-	ROOT_HOST = ""
-
-	for host in getAvailableHosts():
-		if ROOT_HOST:
-			args = {'server' : ROOT_HOST, 'joiner' : getInstance(host).public_dns_name }
-			MarkLogicEC2Lib.configureAuthHttpProcess(ROOT_HOST)
-			MarkLogicEC2Lib.httpProcess("Joining Cluster II","http://" + ROOT_HOST + ":8001/transfer-cluster-config.xqy",args)
-			MarkLogicEC2Lib.configureAuthHttpProcess(getInstance(host).public_dns_name)
-			MarkLogicEC2Lib.httpProcess("Restarting...","http://" + getInstance(host).public_dns_name + ":8001/restart.xqy")
-		else:
-			ROOT_HOST = getInstance(host).public_dns_name
-
-	MarkLogicEC2Lib.configureAuthHttpProcess(ROOT_HOST)
-	MarkLogicEC2Lib.httpProcess("Setting cluster name to "+MarkLogicEC2Config.CLUSTER_NAME,"http://" + ROOT_HOST + ":8001/set-cluster-name.xqy",{"CLUSTER-NAME":MarkLogicEC2Config.CLUSTER_NAME})	
+	cluster()
 elif(mode == CLEAN_MODE):
 	if(len(sys.argv) > 2):
 		host = getHostForRequest(sys.argv[2])
@@ -467,6 +472,12 @@ elif(mode == REFRESH_MODE):
 	else:
 		for host in getAvailableHosts():
 			MarkLogicEC2Lib.sys("Reinstalling for "+host,"powershell -file " + reinstallFileName(host))				
+elif(mode == ALL_MODE):
+	for i in range(MarkLogicEC2Config.HOST_COUNT):
+		createHost()
+	for host in getAvailableHosts():
+		setupHost(host)			
+	cluster()
 elif(mode == "address"):	
 	if(len(sys.argv) > 2):
 		host = getHostForRequest(sys.argv[2])

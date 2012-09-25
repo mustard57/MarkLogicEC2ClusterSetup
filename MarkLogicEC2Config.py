@@ -23,6 +23,7 @@ ELASTIC_IP_FILE = parser.get("Constants","ELASTIC_IP_FILE")
 ADMIN_USER_NAME=parser.get("Configuration","ADMIN_USER_NAME")
 ADMIN_PASSWORD=parser.get("Configuration","ADMIN_PASSWORD")
 MSTSC_PASSWORD=parser.get("Configuration","MSTSC_PASSWORD")
+INSTANCE_SIZE=parser.get("Configuration","INSTANCE_SIZE")
 
 CLUSTER_NAME=parser.get("Configuration","CLUSTER_NAME")
 
