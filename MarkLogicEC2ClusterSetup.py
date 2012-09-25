@@ -187,7 +187,7 @@ def removeDirectories():
 
 def createHost():
 	cmd = '<powershell>Enable-PSRemoting -Force</powershell>'	
-	reservation = ec2.run_instances(image_id='ami-71b50018',instance_type="t1."+MarkLogicEC2Config.INSTANCE_SIZE,key_name="HP",security_groups=["MarkLogic"],user_data=cmd)
+	reservation = ec2.run_instances(image_id='ami-71b50018',instance_type=MarkLogicEC2Config.INSTANCE_SIZE,key_name="HP",security_groups=["MarkLogic"],user_data=cmd)
 	instance = ec2.get_all_instances()[-1].instances[0]
 	print "Created instance "+ instance.id
 	
