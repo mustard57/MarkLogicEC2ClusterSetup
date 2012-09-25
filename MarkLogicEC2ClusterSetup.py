@@ -464,7 +464,11 @@ elif(mode == CLEAN_MODE):
 	else:
 		clean()
 elif(mode == CREATE_MODE):
-	createHost()
+	if(len(sys.argv) > 2):
+		for i in range(int(sys.argv[2])):
+			createHost()
+	else:
+		createHost()
 elif(mode == REFRESH_MODE):
 	if(len(sys.argv) > 2):
 		host = getHostForRequest(sys.argv[2])
