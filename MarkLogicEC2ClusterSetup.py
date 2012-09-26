@@ -58,6 +58,7 @@ def isRootHost(host):
 	return os.path.isfile(MarkLogicEC2Config.HOST_FILE) and (len(getAvailableHosts()) > 0) and (getAvailableHosts()[0] == host)
 
 def getElasticIP(host):
+	address = ""
 	for address in ec2.get_all_addresses():
 		if address.public_ip == getHostIP(host):
 			break
@@ -147,10 +148,9 @@ def waitForStoppedState(host):
 def clean():
 	if os.path.isfile(MarkLogicEC2Config.HOST_FILE):
 		for host in getAvailableHosts():		
-			cleanHost(host)
-			
-	removeDirectories()
-
+			cleanHost(host)	
+	removeIPs()
+	removeDirectories()	
 	removeFile(MarkLogicEC2Config.HOST_FILE)
 	removeFile(MarkLogicEC2Config.ELASTIC_IP_FILE)
 	for file in glob.glob("*.pyc"):
@@ -160,7 +160,8 @@ def cleanHost(host):
 	dns_name = getInstance(host).public_dns_name	
 	getInstance(host).terminate()
 	if(MarkLogicEC2Config.USE_ELASTIC_IP):	
-		getElasticIP(host).release()
+		if getElasticIP(host):		
+			getElasticIP(host).release()
 	
 	for file in (adminFileName(host),sessionFileName(host),reinstallFileName(host),RDPFileName(host)):
 		removeFile(file)
@@ -185,6 +186,13 @@ def removeDirectories():
 	removeDirectory(MarkLogicEC2Config.MSTSC_DIR)
 	removeDirectory(MarkLogicEC2Config.SESSION_DIR)
 
+def removeIPs():
+	for address in ec2.get_all_addresses():
+		for ip in getIPs():
+			if address.public_ip == ip:
+				address.release()
+				print ip + " removed"
+	
 def createHost():
 	cmd = '<powershell>Enable-PSRemoting -Force</powershell>'	
 	reservation = ec2.run_instances(image_id='ami-71b50018',instance_type=MarkLogicEC2Config.INSTANCE_SIZE,key_name="HP",security_groups=["MarkLogic"],user_data=cmd)
@@ -483,12 +491,7 @@ elif(mode == ALL_MODE):
 		setupHost(host)			
 	cluster()
 elif(mode == "address"):	
-	if(len(sys.argv) > 2):
-		host = getHostForRequest(sys.argv[2])
-		allocateIP(host)
-	else:
-		for host in getAvailableHosts():
-			allocateIP(host)
+	removeIPs()
 else:
 	print mode +" is not a permitted mode"
 		
