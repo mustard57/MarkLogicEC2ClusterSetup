@@ -292,7 +292,8 @@ def cluster():
 	for host in getAvailableHosts():
 		MarkLogicEC2Lib.configureAuthHttpProcess(getInstance(host).public_dns_name)	
 		if ROOT_HOST:
-			args = {'server' : ROOT_HOST, 'joiner' : getInstance(host).public_dns_name }
+			args = {'server' : ROOT_HOST, 'joiner' : getInstance(host).public_dns_name, 'pass' : MarkLogicEC2Config.ADMIN_PASSWORD }
+			
 			MarkLogicEC2Lib.httpProcess("Joining Cluster","http://" + getInstance(host).public_dns_name + ":8001/join-cluster.xqy", args)
 		else:
 			ROOT_HOST = getInstance(host).public_dns_name
@@ -301,7 +302,7 @@ def cluster():
 
 	for host in getAvailableHosts():
 		if ROOT_HOST:
-			args = {'server' : ROOT_HOST, 'joiner' : getInstance(host).public_dns_name }
+			args = {'server' : ROOT_HOST, 'joiner' : getInstance(host).public_dns_name, 'pass' : MarkLogicEC2Config.ADMIN_PASSWORD}
 			MarkLogicEC2Lib.configureAuthHttpProcess(ROOT_HOST)
 			MarkLogicEC2Lib.httpProcess("Joining Cluster II","http://" + ROOT_HOST + ":8001/transfer-cluster-config.xqy",args)
 			MarkLogicEC2Lib.configureAuthHttpProcess(getInstance(host).public_dns_name)
