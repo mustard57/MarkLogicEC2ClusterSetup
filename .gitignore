@@ -5,3 +5,4 @@ html
 mstsc
 elastic_ip.txt
 sessions
+*.log
