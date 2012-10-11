@@ -39,8 +39,6 @@ def getEC2Name():
 	response = urllib2.urlopen(request)	
 	data = response.read().decode()	
 	return data
-
-
 	
 def adminURL(host_name):
 	return "http://"+host_name+":8001/"
