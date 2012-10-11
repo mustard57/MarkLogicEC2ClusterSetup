@@ -55,31 +55,29 @@ LICENSE_KEY - the 12 * 4 char ( plus hyphens ) license key you will be using. No
 LICENSEE - the licensee name 
 LICENSE_TYPE - if you have a full MarkLogic key use 'development', otherwise 'evaluation' - though this probably will not have enterprise capability.
 
-Execution
-=========
+Quick Start
+===========
 
 The following commands are available : thaw|help|freeze|status|cluster|clean|create|setup|refresh|restart|devices|all
 
 They are called by typing 
 
-python MarkLogicEC2ClusterSetup.py cmd - where cmd is one of the above commands.
+ec2setup.sh cmd - where cmd is one of the above commands. Use ec2setup.bat if calling from DOS.
 
 In theory, having done the above config you should be able to type
 
-python MarkLogicEC2ClusterSetup.py all
+ec2setup.sh all
 
 and an n node cluster will be built for you. In the html sub-directory of myDir you will get a html file that you can click on to take you to the admin console for the host in question.
-
-Assuming it doesn't work first time, use in the following way.
 
 Single Instance Setup
 =====================
 
-We start by considering commands for a single node.
+To understand the commands in more detail, let's focus on using just one instance.
 
-python MarkLogicEC2ClusterSetup.py create will create your ec2 node for you.
+ec2setup.sh create will create your ec2 node for you.
 
-python MarkLogicEC2ClusterSetup.py create will create your ec2 node for you, based on INSTANCE_TYPE, INSTANCE_SIZE, EC2_SECURITY_GROUP_NAME and EC2_KEY_PAIR_NAME. If INSTANCE_TYPE=RedHat, a disk volume will be mounted of size DISK_CAPACITY. If USE_ELASTIC_IP is true, you will be assigned a fixed elastic ip.
+ec2setup.sh create will create your ec2 node for you, based on INSTANCE_TYPE, INSTANCE_SIZE, EC2_SECURITY_GROUP_NAME and EC2_KEY_PAIR_NAME. If INSTANCE_TYPE=RedHat, a disk volume will be mounted of size DISK_CAPACITY. If USE_ELASTIC_IP is true, you will be assigned a fixed elastic ip.
 
 Here is some sample output
 
@@ -92,7 +90,7 @@ Elastic IP added for host i-dc4803a1 - 54.243.182.139
 
 Your instance id ( i-dc4803a1 in the above output ) will be written to host_file.txt. If you are using elastic ips that will be written to elastic_ip.txt.
 
-python MarkLogicEC2ClusterSetup.py status will give you some basic status info e.g.
+ec2setup.sh status will give you some basic status info e.g.
 
 Run mode is status
 Host i-dc4803a1 is in the running state with dns = ec2-54-243-182-139.compute-1.amazonaws.com
@@ -101,9 +99,9 @@ You can also use the Amazon console : https://console.aws.amazon.com/ec2
 
 If you want to set up MarkLogic on this host type
 
-python MarkLogicEC2ClusterSetup.py setup
+ec2setup.sh setup
 
-This will install MarkLogic on your host, using the license credentials above. The security user will be ADMIN_USER_NAME with password ADMIN_PASSWORD. If INSTANCE_TYPE=Windows, your rdp password will be set to MSTSC_PASSWORD. Note that Windows boxes are assigned an initial password by EC2 - but this can take up to half an hour to complete. python MarkLogicEC2ClusterSetup.py setup will loop until this password is found. It is recommended that 15 min or so are left between create and setup for windows boxes as premature requests for the windows password seem to result in instance unreliability in my experience. Setting MSTSC_PASSWORD requires your ssh private key to descrypt the initial password, hence the specification of RSA_PRIVATE_KEY.
+This will install MarkLogic on your host, using the license credentials above. The security user will be ADMIN_USER_NAME with password ADMIN_PASSWORD. If INSTANCE_TYPE=Windows, your rdp password will be set to MSTSC_PASSWORD. Note that Windows boxes are assigned an initial password by EC2 - but this can take up to half an hour to complete. ec2setup.sh setup will loop until this password is found. It is recommended that 15 min or so are left between create and setup for windows boxes as premature requests for the windows password seem to result in instance unreliability in my experience. Setting MSTSC_PASSWORD requires your ssh private key to descrypt the initial password, hence the specification of RSA_PRIVATE_KEY.
 
 The install will add some xqy files to the Admin directory of your remote host, used for naming the host ( it is given its EC2 dns name ), and setting up clustering.
 
@@ -119,7 +117,7 @@ The windows setup is more complex than the RedHat install. Python 2.6 is native 
 
 You can 'freeze' your instance using
 
-python MarkLogicEC2ClusterSetup.py freeze
+ec2setup.sh freeze
 
 This will stop your instance, but will keep your data. The advantage of this is that you do not incur CPU charges, only disk charges. Storage charges are 10c per Gb per month i.e. approx 0.33 cents per day per Gb, or 10 cents per day for 30Gb  - a typical per host charge. The minimum instance charge is 2c per hour or 48c per day ( for the micro instance ) and around 32c per hour or $7.68 per day for large instances. So stopping saves you money. Typical output is
 
@@ -131,7 +129,7 @@ Host stopped
 
 The opposite of freeze is thaw. You can thaw your instance using
 
-python MarkLogicEC2ClusterSetup.py thaw
+ec2setup.sh thaw
 
 This will restart your instance, add your previously defined IPs if USE_ELASTIC_IP = true, 
 
@@ -150,7 +148,7 @@ In this instance you can do a refresh. This re-installs MarkLogic, but does not 
 
 To refresh run
 
-python MarkLogicEC2ClusterSetup.py refresh
+ec2setup.sh refresh
 
 Here is some sample output
 
@@ -186,7 +184,7 @@ Script completed, visit http://ec2-54-243-182-139.compute-1.amazonaws.com:8001 t
 
 Finally, you can run the clean command 
 
-python MarkLogicEC2ClusterSetup.py clean
+ec2setup.sh clean
  
 This will terminate your instance and remove any associated elastic ips and block storage. Sample output : 
 
@@ -201,13 +199,13 @@ Running commands with an argument
 
 All the above examples show the library working in single instance mode. In fact, the commands thaw,freeze,clean,setup,status,refresh,restart,devices can all take 0 or one arguments. If run without arguments, all hosts listed in host_file.txt, which is populated using the create command, are iterated over. Alternatively you can supply an index e.g.
 
-python MarkLogicEC2ClusterSetup.py freeze 2
+ec2setup.sh freeze 2
 
-will freeze the second host listed in hosts_file.txt. Or you can supply the id of the host e.g. python MarkLogicEC2ClusterSetup.py freeze i-dc4803a1.
+will freeze the second host listed in hosts_file.txt. Or you can supply the id of the host e.g. ec2setup.sh freeze i-dc4803a1.
 
 The create command, if run with an integer e.g.
 
-python MarkLogicEC2ClusterSetup.py create 5
+ec2setup.sh create 5
 
 will create that number of hosts, in this case 5.
 
@@ -216,12 +214,12 @@ Clustering
 
 After you have run something like
 
-python MarkLogicEC2ClusterSetup.py create 5
-python MarkLogicEC2ClusterSetup.py setup
+ec2setup.sh create 5
+ec2setup.sh setup
 
 you can run 'cluster' - which will add all your hosts into a cluster, with the first host created as the bootstrap host. Sample output : 
 
-$ python MarkLogicEC2ClusterSetup.py cluster
+$ ec2setup.sh cluster
 Run mode is cluster
 Configuring auth for http://ec2-54-243-185-5.compute-1.amazonaws.com:8001
 Configuring auth for http://ec2-54-243-185-6.compute-1.amazonaws.com:8001
@@ -245,7 +243,7 @@ All mode
 
 If you run 
 
-python MarkLogicEC2ClusterSetup.py all
+ec2setup.sh all
 
 this will create n hosts where n is equal to HOST_COUNT in config.ini. It will then run setup for each host, followed by cluster. The only problem is that at the time setup is called, hosts may not be 'ready' - resulting in errors. By and large, try this, if you get errors, run setup against the hosts that failed, followed by cluster.
 
@@ -256,19 +254,19 @@ We have not yet restart,devices and help.
 
 When thawing a cluster, with elastic ips, in theory you can start using this straight away. In practice, the block storage, where the MarkLogic data assets are kept will have been dismounted and re-mounted, and the elastic ip assigned after host startup, which may leave a running MarkLogic process in an non-usable state. So 
 
-python MarkLogicEC2ClusterSetup.py restart
+ec2setup.sh restart
 
 is a good idea - which will restart MarkLogic on all your hosts. You can restart a single host using
 
-python MarkLogicEC2ClusterSetup.py restart index
+ec2setup.sh restart index
 
-Similarly, when a host is thawed, the block storage remount may not take place owing to this being called 'too quickly'. You will get a 'bad file number' message if this is the case. In that case running
+If for some reason the block storage device mapping has not taken place correctly (signified by a 'bad file number') error then use
 
-python MarkLogicEC2ClusterSetup.py devices index
+ec2setup.sh devices index
 
-will remount the volume for a particular host.
+to remount the volume for a particular host.
 
-python MarkLogicEC2ClusterSetup.py help 
+ec2setup.sh help 
 
 gives you a list of commands
 
