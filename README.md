@@ -96,7 +96,7 @@ Your instance id ( i-dc4803a1 in the above output ) will be written to host\_fil
 _ec2setup.sh_ __<i>status</i>__ will give you some basic status info e.g.
 
 > `Run mode is status   
-> Host i-dc4803a1 is in the running state with dns = ec2-54-243-182-139.compute-1.amazonaws.com`
+> `Host i-dc4803a1 is in the running state with dns = ec2-54-243-182-139.compute-1.amazonaws.com`
 
 You can also use the Amazon console : <https://console.aws.amazon.com/ec2>
 
@@ -124,11 +124,11 @@ _ec2setup.sh_ __<i>freeze</i>__
 
 This will stop your instance, but will keep your data. The advantage of this is that you do not incur CPU charges, only disk charges. Storage charges are 10c per Gb per month i.e. approx 0.33 cents per day per Gb, or 10 cents per day for 30Gb  - a typical per host charge. The minimum instance charge is 2c per hour or 48c per day ( for the micro instance ) and around 32c per hour or $7.68 per day for large instances. So stopping saves you money. Typical output is
 
-> `Run mode is freeze   
-> Stopping host i-052baa78   
-> Instance not yet in stopped state   
-> Instance not yet in stopped state   
-> Host stopped   `
+> `Run mode is freeze`   
+> `Stopping host i-052baa78`   
+> `Instance not yet in stopped state`   
+> `Instance not yet in stopped state`   
+> `Host stopped`   
 
 The opposite of freeze is thaw. You can thaw your instance using
 
@@ -136,12 +136,12 @@ _ec2setup.sh_ __<i>thaw</i>__
 
 This will restart your instance, add your previously defined IPs if USE\_ELASTIC\_IP = true, 
 
-> `Run mode is thaw   
-> Starting host i-dc4803a1   
-> Instance not yet in running state   
-> Elastic IP added for host i-dc4803a1 - Address:54.243.182.139   
-> Check device mapping ...   
-> Host started   `
+> `Run mode is thaw`   
+> `Starting host i-dc4803a1`   
+> `Instance not yet in running state`   
+> `Elastic IP added for host i-dc4803a1 - Address:54.243.182.139`   
+> `Check device mapping ...`   
+> `Host started`   
 
 If using RedHat, your block storage device mapping ( see above ) will be re-mapped using ln. This can sometimes fail  - see below for what to do if this happens.
 
@@ -155,35 +155,35 @@ _ec2setup.sh_ __<i>refresh</i>__
 
 Here is some sample output
 
-> `Run mode is refresh   
-> Refreshing i-dc4803a1   
-> Stopping MarkLogic   
-> Stopping MarkLogic: .[  OK  ]   
-> Remove previous install   
-> Install MarkLogic   
-> Loaded plugins: amazon-id, product-id, rhui-lb, security, subscription-manager   
-> Updating certificate-based repositories.   
-> Unable to read consumer identity   
-> Setting up Install Process   
-> Examining MarkLogic-6.0-1.1.x86\_64.rpm: MarkLogic-6.0-1.1.x86\_64   
-> MarkLogic-6.0-1.1.x86\_64.rpm: does not update installed package.   
-> Error: Nothing to do   
-> Starting MarkLogic: [  OK  ]   
-> Stopping MarkLogic: .[  OK  ]   
-> Starting MarkLogic: [  OK  ]   
-> Configuring auth for <http://localhost:8001>   
-> 2. Installing   
-> 3. Starting MarkLogic Instance   
-> 4. Configuring licence details   
-> 5. Accepting EULA   
-> 6. Triggering initial application server config   
-> 7a. Restarting Server   
-> 7b. Restarting Server   
-> 8. Configuring Admin user (security)   
-> 9. Testing Admin Connection   
-> Move set host name script   
-> Setting host name   
-> Script completed, visit <http://ec2-54-243-182-139.compute-1.amazonaws.com:8001> to access the admin interface.   `
+> `Run mode is refresh`   
+> `Refreshing i-dc4803a1`   
+> `Stopping MarkLogic`   
+> `Stopping MarkLogic: .[  OK  ]`   
+> `Remove previous install`   
+> `Install MarkLogic`   
+> `Loaded plugins: amazon-id, product-id, rhui-lb, security, subscription-manager`   
+> `Updating certificate-based repositories.`   
+> `Unable to read consumer identity`   
+> `Setting up Install Process`   
+> `Examining MarkLogic-6.0-1.1.x86\_64.rpm: MarkLogic-6.0-1.1.x86\_64`   
+> `MarkLogic-6.0-1.1.x86\_64.rpm: does not update installed package.`   
+> `Error: Nothing to do`   
+> `Starting MarkLogic: [  OK  ]`   
+> `Stopping MarkLogic: .[  OK  ]`   
+> `Starting MarkLogic: [  OK  ]`   
+> `Configuring auth for <http://localhost:8001> `  
+> `2. Installing`   
+> `3. Starting MarkLogic Instance`   
+> `4. Configuring licence details`   
+> `5. Accepting EULA`   
+> `6. Triggering initial application server config`   
+> `7a. Restarting Server`   
+> `7b. Restarting Server`   
+> `8. Configuring Admin user (security)`   
+> `9. Testing Admin Connection`   
+> `Move set host name script`   
+> `Setting host name`   
+> `Script completed, visit <http://ec2-54-243-182-139.compute-1.amazonaws.com:8001> to access the admin interface.`   
 
 Finally, you can run the clean command 
 
@@ -191,11 +191,11 @@ _ec2setup.sh_ __<i>clean</i>__
  
 This will terminate your instance and remove any associated elastic ips and block storage. Sample output : 
 
-> `Run mode is clean   
-> Terminating host i-dc4803a1   
-> Instance not yet in terminated state   
-> Instance not yet in terminated state   
-> Removing volume vol-e155519b`
+> `Run mode is clean`   
+> `Terminating host i-dc4803a1`   
+> `Instance not yet in terminated state`   
+> `Instance not yet in terminated state`   
+> `Removing volume vol-e155519b`
  
 Running commands with an argument
 ---------------------------------
@@ -224,22 +224,22 @@ you can run 'cluster' - which will add all your hosts into a cluster, with the f
 
 _ec2setup.sh_ __<i>cluster</i>__
    
-> `Run mode is cluster   
-> Configuring auth for http://ec2-54-243-185-5.compute-1.amazonaws.com:8001   
-> Configuring auth for http://ec2-54-243-185-6.compute-1.amazonaws.com:8001   
-> Joining Cluster   
-> Configuring auth for http://ec2-54-243-185-7.compute-1.amazonaws.com:8001   
-> Joining Cluster   
-> Configuring auth for http://ec2-54-243-185-5.compute-1.amazonaws.com:8001   
-> Joining Cluster II   
-> Configuring auth for http://ec2-54-243-185-6.compute-1.amazonaws.com:8001   
-> Restarting...   
-> Configuring auth for http://ec2-54-243-185-5.compute-1.amazonaws.com:8001   
-> Joining Cluster II   
-> Configuring auth for http://ec2-54-243-185-7.compute-1.amazonaws.com:8001   
-> Restarting...   
-> Configuring auth for http://ec2-54-243-185-5.compute-1.amazonaws.com:8001   
-> Setting cluster name to Master   `
+> `Run mode is cluster`   
+> `Configuring auth for http://ec2-54-243-185-5.compute-1.amazonaws.com:8001`   
+> `Configuring auth for http://ec2-54-243-185-6.compute-1.amazonaws.com:8001`   
+> `Joining Cluster`   
+> `Configuring auth for http://ec2-54-243-185-7.compute-1.amazonaws.com:8001`   
+> `Joining Cluster`   
+> `Configuring auth for http://ec2-54-243-185-5.compute-1.amazonaws.com:8001`   
+> `Joining Cluster II`   
+> `Configuring auth for http://ec2-54-243-185-6.compute-1.amazonaws.com:8001`   
+> `Restarting...`   
+> `Configuring auth for http://ec2-54-243-185-5.compute-1.amazonaws.com:8001`   
+> `Joining Cluster II`   
+> `Configuring auth for http://ec2-54-243-185-7.compute-1.amazonaws.com:8001`   
+> `Restarting...`   
+> `Configuring auth for http://ec2-54-243-185-5.compute-1.amazonaws.com:8001`   
+> `Setting cluster name to Master`   `
 
 Clustering requires two calls for each host - one to add to the cluster and one to write the cluster info back to the original host. Hosts are restarted following addition to a cluster. Finally the cluster is named using __CLUSTER\_NAME__ from config.ini
 
