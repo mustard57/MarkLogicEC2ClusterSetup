@@ -6,7 +6,7 @@ The purpose of this library is to allow the easy setup of MarkLogic clusters on 
 Pre-Requisites
 --------------
 
-Clone this git repository to a local directory  - myDir say, using _"git clone https://github.com/mustard57/EC2 myDir"_
+Clone this git repository to a local directory  - myDir say, using _git clone https://github.com/mustard57/MarkLogicEC2ClusterSetup.git ec2_
 
 Make sure you have python 2.6. 2.7 does not work with boto ( see below ) - something to do with unicode. Python 3.0 and above does not work due to substantial syntactical refactoring. 
 
@@ -95,7 +95,7 @@ Your instance id ( i-dc4803a1 in the above output ) will be written to host\_fil
 
 _ec2setup.sh_ __<i>status</i>__ will give you some basic status info e.g.
 
-> `Run mode is status   
+> `Run mode is status`   
 > `Host i-dc4803a1 is in the running state with dns = ec2-54-243-182-139.compute-1.amazonaws.com`
 
 You can also use the Amazon console : <https://console.aws.amazon.com/ec2>
