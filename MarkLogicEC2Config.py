@@ -1,4 +1,5 @@
 import ConfigParser
+import os
 
 # Configuration
 CONFIG_FILE="config.ini"
@@ -13,7 +14,11 @@ REDHAT_INSTANCE_TYPE = "RedHat"
 WINDOWS_INSTANCE_TYPE = "Windows"
 
 PERMITTED_INSTANCE_TYPES = [REDHAT_INSTANCE_TYPE,WINDOWS_INSTANCE_TYPE]
-                                     									 
+                                     
+if not(os.path.isfile(CONFIG_FILE)):
+	print "Config file " + CONFIG_FILE + " not found. Copy config.ini.sample -> config.ini and edit"
+	exit()
+									 
 parser = ConfigParser.ConfigParser()
 parser.read(CONFIG_FILE)
 
