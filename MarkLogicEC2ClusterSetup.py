@@ -70,12 +70,10 @@ def startInstance(host):
 		ec2.start_instances(host)
 		waitForRunningState(host)
 		if(MarkLogicEC2Config.USE_ELASTIC_IP):
-			waitForRunningState(host)		
 			getElasticIP(host).associate(host)
 			print "Elastic IP added for host " + host + " - " + str(getElasticIP(host))
+		waitForReachableState(host)			
 		if MarkLogicEC2Config.isRedHat():
-			#Need sleep period as host is not immediately available once running state reached
-			time.sleep(SLEEP_PERIOD)			
 			MarkLogicEC2Lib.sys("Check device mapping ...",sshToBoxString(getInstance(host).dns_name) + "'" + lnCommand()+ "'")			
 			createSSHLink(host)
 		if MarkLogicEC2Config.isWindows():
@@ -109,6 +107,9 @@ def getInstanceStatus(host):
 	return getInstance(host).state
 
 def isRunning(host):
+	return getInstance(host).state == 'running' 
+
+def isReachable(host):
 	return getInstance(host).state == 'running' and ec2.get_all_instance_status(host)[0].instance_status.status == "ok" and ec2.get_all_instance_status(host)[0].system_status.status == "ok"
 
 def isStopped(host):
@@ -148,6 +149,15 @@ def waitForRunningState(host):
 			print "Instance not yet in running state"
 		time.sleep(SLEEP_PERIOD)
 
+def waitForReachableState(host):	
+	while True:		
+		instance = getInstance(host)
+		if isReachable(host):
+			break
+		else:
+			print "Instance not yet in reachable state"
+		time.sleep(SLEEP_PERIOD)
+		
 def waitForStoppedState(host):	
 	while True:		
 		instance = getInstance(host)
@@ -255,10 +265,10 @@ def createHost():
 	
 	if(MarkLogicEC2Config.USE_ELASTIC_IP):
 		allocateIP(instance.id)
-		time.sleep(SLEEP_PERIOD)					
-		waitForRunningState(str(instance.id))		
 		print "Elastic IP added for host " + instance.id + " - " + getHostIP(instance.id)
 
+	waitForReachableState(str(instance.id))			
+		
 	if MarkLogicEC2Config.isRedHat():
 		createSSHLink(str(instance.id))
 		volume = ec2.create_volume(MarkLogicEC2Config.DISK_CAPACITY,instance.placement,"")
