@@ -6,3 +6,5 @@ mstsc
 elastic_ip.txt
 sessions
 *.log
+config.ini
+docs
