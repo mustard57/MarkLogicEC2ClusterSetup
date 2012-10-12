@@ -66,10 +66,11 @@ def getElasticIP(host):
 	
 def startInstance(host):
 	if(not(isRunning(host))):
-		print "Starting host "+host
+		print "Starting thaw of " + host + " at "+time.strftime("%H:%M:%S", time.gmtime())
 		ec2.start_instances(host)
 		waitForRunningState(host)
 		if(MarkLogicEC2Config.USE_ELASTIC_IP):
+			waitForRunningState(host)		
 			getElasticIP(host).associate(host)
 			print "Elastic IP added for host " + host + " - " + str(getElasticIP(host))
 		if MarkLogicEC2Config.isRedHat():
@@ -83,7 +84,7 @@ def startInstance(host):
 			createReinstallScript(host)					
 		createAdminConsoleLink(host)
 		
-		print "Host started"						
+		print "Host " + host + " started at "+time.strftime("%H:%M:%S", time.gmtime())
 	else:
 		print "Host " + host + " already running"
 		
@@ -235,6 +236,9 @@ def removeIPs():
 	
 def createHost():
 	cmd=""
+
+	print "Starting create host at "+time.strftime("%H:%M:%S", time.gmtime())
+	
 	if MarkLogicEC2Config.isWindows():
 		cmd = '<powershell>Enable-PSRemoting -Force</powershell>'	
 		
@@ -251,6 +255,8 @@ def createHost():
 	
 	if(MarkLogicEC2Config.USE_ELASTIC_IP):
 		allocateIP(instance.id)
+		time.sleep(SLEEP_PERIOD)					
+		waitForRunningState(str(instance.id))		
 		print "Elastic IP added for host " + instance.id + " - " + getHostIP(instance.id)
 
 	if MarkLogicEC2Config.isRedHat():
@@ -258,6 +264,8 @@ def createHost():
 		volume = ec2.create_volume(MarkLogicEC2Config.DISK_CAPACITY,instance.placement,"")
 		volume.attach(instance.id,MarkLogicEC2Config.EBS_DEVICE_NAME)
 		print MarkLogicEC2Config.DISK_CAPACITY + "G disk volume created"
+	print "Finishing create host at "+time.strftime("%H:%M:%S", time.gmtime())
+
 		
 def allocateIP(host):
 	if(len(ec2.get_all_addresses()) >= MarkLogicEC2Config.EC2_ELASTIC_IP_LIMIT):
@@ -276,6 +284,8 @@ def setupWindowsHost(host):
 
 	dns_name =  instance.public_dns_name
 
+	print "Starting "+dns_name+" setup at "+time.strftime("%H:%M:%S", time.gmtime())
+	
 	while True:		
 		dns_name =  instance.public_dns_name
 		instance_id =  instance.id
@@ -337,14 +347,15 @@ def setupWindowsHost(host):
 
 def setupRedHatHost(host):
 	instance = getInstance(host)
-
 	dns_name =  instance.public_dns_name
+	
+	print "Starting "+dns_name+" setup at "+time.strftime("%H:%M:%S", time.gmtime())
 	ssh_cmd = sshToBoxString(dns_name)
 
 	MarkLogicEC2Lib.sys("Sort out device mapping ...",ssh_cmd + "'" + lnCommand() + "'")
 	
 	MarkLogicEC2Lib.sys("Remove host firewall",ssh_cmd+"'service iptables save ; service iptables stop ; chkconfig iptables off'")
-	MarkLogicEC2Lib.sys("Download MarkLogic install",ssh_cmd + "'cd "+MarkLogicEC2Config.INSTALL_DIR+";wget "+MarkLogicEC2Config.MARKLOGIC_DOWNLOAD_URL + MarkLogicEC2Config.MARKLOGIC_EXE+"'")
+	MarkLogicEC2Lib.sys("Download MarkLogic install",ssh_cmd + "'cd "+MarkLogicEC2Config.INSTALL_DIR+";wget -nv "+MarkLogicEC2Config.MARKLOGIC_DOWNLOAD_URL + MarkLogicEC2Config.MARKLOGIC_EXE+"'")
 	MarkLogicEC2Lib.sys("Copy required files","scp config.ini MarkLogicEC2Config.py MarkLogicEC2Lib.py for_remote/* root@"+dns_name+":"+MarkLogicEC2Config.INSTALL_DIR)
 	MarkLogicEC2Lib.sys("Install MarkLogic",ssh_cmd+"cd "+MarkLogicEC2Config.INSTALL_DIR+";python MarkLogicSetup.py")
 	
@@ -358,7 +369,6 @@ def refreshRedHatHost(host):
 	dns_name =  instance.public_dns_name
 	ssh_cmd = sshToBoxString(dns_name)
 
-	# MarkLogicEC2Lib.sys("Sort out device mapping ...",ssh_cmd + "'ln -s "+MarkLogicEC2Config.ACTUAL_EBS_DEVICE_NAME+" "+MarkLogicEC2Config.EXPECTED_EBS_DEVICE_NAME+"'")						
 	MarkLogicEC2Lib.sys("Stopping MarkLogic",ssh_cmd+"'/etc/init.d/MarkLogic stop'")
 	MarkLogicEC2Lib.sys("Remove previous install",ssh_cmd+"rm -rf "+MarkLogicEC2Config.MARKLOGIC_REDHAT_DATA_ROOT +"/*")
 	MarkLogicEC2Lib.sys("Install MarkLogic",ssh_cmd+"cd "+MarkLogicEC2Config.INSTALL_DIR+";python MarkLogicSetup.py")
@@ -374,14 +384,17 @@ def setupHost(host):
 		setupRedHatHost(host)
 
 def refreshHost(host):
-	print "Refreshing "+host
+	print "Starting refresh " + host + " at "+time.strftime("%H:%M:%S", time.gmtime())
 	if MarkLogicEC2Config.isWindows():
 		MarkLogicEC2Lib.sys("Reinstalling for "+host,"powershell -file " + reinstallFileName(host))		
 	elif MarkLogicEC2Config.isRedHat():
 		refreshRedHatHost(host)
+	print "Finishing refresh " + host + " at "+time.strftime("%H:%M:%S", time.gmtime())
+
 		
 def cluster():	
 	ROOT_HOST = ""
+	print "Starting cluster at "+time.strftime("%H:%M:%S", time.gmtime())
 	
 	for host in getAvailableHosts():
 		MarkLogicEC2Lib.configureAuthHttpProcess(getInstance(host).public_dns_name)	
@@ -406,7 +419,9 @@ def cluster():
 
 	MarkLogicEC2Lib.configureAuthHttpProcess(ROOT_HOST)
 	MarkLogicEC2Lib.httpProcess("Setting cluster name to "+MarkLogicEC2Config.CLUSTER_NAME,"http://" + ROOT_HOST + ":8001/set-cluster-name.xqy",{"CLUSTER-NAME":MarkLogicEC2Config.CLUSTER_NAME})	
-			
+	print "Finishing cluster at "+time.strftime("%H:%M:%S", time.gmtime())
+
+	
 def createMarkLogicDownloadScript():
 	checkDirectory(MarkLogicEC2Config.POWERSHELL_DIR)
 	fileName = MarkLogicEC2Config.POWERSHELL_DIR +"\\downloadmarklogic.ps1"
