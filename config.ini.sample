@@ -1,5 +1,5 @@
 [Configuration]
-RSA_PRIVATE_KEY=c:\users\ktune\.ssh\id_rsa
+RSA_PRIVATE_KEY=c:\users\XXXX\.ssh\id_rsa
 HOST_COUNT=3
 ADMIN_USER_NAME=admin
 ADMIN_PASSWORD=abcdef
