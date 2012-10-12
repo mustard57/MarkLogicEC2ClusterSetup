@@ -84,12 +84,12 @@ _ec2setup.sh_ __<i>create</i>__ will create your ec2 node for you, based on __IN
 
 Here is some sample output
 
-> `Run mode is create`   
-> `Created instance i-dc4803a1`   
-> Instance not yet in running state   
-> Elastic IP 54.243.182.139 added   
-> Elastic IP added for host i-dc4803a1 - 54.243.182.139   
-> 10G disk volume created`   
+`Run mode is create   
+Created instance i-dc4803a1   
+Instance not yet in running state   
+Elastic IP 54.243.182.139 added   
+Elastic IP added for host i-dc4803a1 - 54.243.182.139   
+10G disk volume created   `
 
 Your instance id ( i-dc4803a1 in the above output ) will be written to host\_file.txt. If you are using elastic ips that will be written to elastic\_ip.txt.
 
