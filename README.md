@@ -6,7 +6,7 @@ The purpose of this library is to allow the easy setup of MarkLogic clusters on 
 Pre-Requisites
 --------------
 
-Clone this git repository to a local directory  - myDir say, using _git clone https://github.com/mustard57/MarkLogicEC2ClusterSetup.git ec2_
+Clone this git repository to a local directory  - myDir say, using _git clone https://github.com/mustard57/MarkLogicEC2ClusterSetup.git myDif_
 
 Make sure you have python 2.6. 2.7 does not work with boto ( see below ) - something to do with unicode. Python 3.0 and above does not work due to substantial syntactical refactoring. 
 
