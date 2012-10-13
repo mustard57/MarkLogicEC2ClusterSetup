@@ -560,9 +560,10 @@ SETUP_MODE = "setup"
 REFRESH_MODE = "refresh"
 RESTART_MODE = "restart"
 DEVICES_MODE = "devices"
+REMOTE_MODE="remote"
 ALL_MODE = "all"
 
-MODES = (THAW_MODE,HELP_MODE,FREEZE_MODE,CLUSTER_MODE,CLEAN_MODE,CREATE_MODE,SETUP_MODE,STATUS_MODE,REFRESH_MODE,ALL_MODE,RESTART_MODE,DEVICES_MODE)
+MODES = (THAW_MODE,HELP_MODE,FREEZE_MODE,CLUSTER_MODE,CLEAN_MODE,CREATE_MODE,SETUP_MODE,STATUS_MODE,REFRESH_MODE,ALL_MODE,RESTART_MODE,DEVICES_MODE,REMOTE_MODE)
 
 # Get mode
 if(len(sys.argv) > 1):
@@ -643,6 +644,15 @@ elif(mode == DEVICES_MODE):
 	else:
 		for host in getAvailableHosts():
 			MarkLogicEC2Lib.sys("Check device mapping ...",sshToBoxString(getInstance(host).dns_name) + "'" + lnCommand()+ "'")												
+elif(mode == REMOTE_MODE):
+	if(len(sys.argv) > 2):			
+		dns_name =  getInstance(getHostForRequest(sys.argv[2])).dns_name
+		if MarkLogicEC2Config.isRedHat():
+			MarkLogicEC2Lib.sys("Logging into box "+dns_name,sshToBoxString(dns_name))
+		elif MarkLogicEC2Config.isWindows():
+			MarkLogicEC2Lib.sys("Logging into box "+dns_name,"powershell -noexit -file sessions\\"+ dns_name + ".session.ps1")
+	else:
+		print "You must supply an index or an instance id"
 else:
 	print mode +" is not a permitted mode"
 		

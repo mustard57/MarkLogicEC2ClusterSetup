@@ -41,7 +41,7 @@ Configuration
 
 All the config is in config.ini. You need to specify ( in the Configuration section )
 
-__RSA\_PRIVATE\_KEY__ - the file where your private key is. You only need this if using Windows instances ( not recommended ) for decrypting the Windows password using rsa.   
+__RSA\_PRIVATE\_KEY__ - the file where your private key is. You only need to specify this if using Windows instances, for decrypting the Windows password using rsa.   
 __HOST\_COUNT__ - the number of hosts you want in your cluster   
 __ADMIN\_USER\_NAME__ - the name of your MarkLogic admin user   
 __ADMIN\_PASSWORD__ - your MarkLogic admin password   
@@ -63,7 +63,7 @@ __LICENSE\_TYPE__ - if you have a full MarkLogic key use 'development', otherwis
 Quick Start
 -----------
 
-The following commands are available : thaw|help|freeze|status|cluster|clean|create|setup|refresh|restart|devices|all
+The following commands are available : thaw|help|freeze|status|cluster|clean|create|setup|refresh|restart|devices|remote|all
 
 They are called by typing 
 
@@ -255,7 +255,7 @@ this will create n hosts where n is equal to __HOST\_COUNT__ in config.ini. It w
 Other Commands
 --------------
 
-We have not yet restart,devices and help.
+We have not yet looked at restart, devices, remote and help.
 
 When thawing a cluster, with elastic ips, in theory you can start using this straight away. In practice, the block storage, where the MarkLogic data assets are kept will have been dismounted and re-mounted, and the elastic ip assigned after host startup, which may leave a running MarkLogic process in an non-usable state. So 
 
@@ -274,6 +274,12 @@ to remount the volume for a particular host.
 _ec2setup.sh_ __<i>help</i>__
 
 gives you a list of commands
+
+To log into a box at the command line do
+
+_ec2setup.sh_ __<i>remote index</i>__
+
+You will be logged in using ssh if the cluster is a UNIX cluster, and using powershell if the cluster is Windows based.
 
 Elastic IPs
 -----------
@@ -311,7 +317,7 @@ __PYTHON\_DOWNLOAD\_URL__ = http://www.python.org/ftp/python/2.6/
 __PYTHON\_EXE__ = python-2.6.amd64.msi   
 __PYTHON\_INSTALL\_DIR__ = c:\python26   
 
-We also specify the python install location for windows, and it's install location.
+We also specify the python install location for windows, and its install location.
 
 
 
