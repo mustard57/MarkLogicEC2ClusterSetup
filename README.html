@@ -1,10 +1,10 @@
 <h1>MarkLogic EC2 Cluster Setup</h1>
 
-<p>The purpose of this library is to allow the easy setup of MarkLogic clusters on EC2.</p>
+<p>The purpose of this library is to allow the easy setup of MarkLogic clusters on EC2. </p>
 
 <h2>Pre-Requisites</h2>
 
-<p>Clone this git repository to a local directory  - myDir say, using <em>"git clone https://github.com/mustard57/EC2 myDir"</em></p>
+<p>Clone this git repository to a local directory  - myDir say, using <em>git clone https://github.com/mustard57/MarkLogicEC2ClusterSetup.git myDir</em></p>
 
 <p>Make sure you have python 2.6. 2.7 does not work with boto ( see below ) - something to do with unicode. Python 3.0 and above does not work due to substantial syntactical refactoring. </p>
 
@@ -38,7 +38,7 @@
 
 <p>All the config is in config.ini. You need to specify ( in the Configuration section )</p>
 
-<p><strong>RSA_PRIVATE_KEY</strong> - the file where your private key is. You only need this if using Windows instances ( not recommended ) for decrypting the Windows password using rsa. <br />
+<p><strong>RSA_PRIVATE_KEY</strong> - the file where your private key is. You only need to specify this if using Windows instances, for decrypting the Windows password using rsa. <br />
 <strong>HOST_COUNT</strong> - the number of hosts you want in your cluster <br />
 <strong>ADMIN_USER_NAME</strong> - the name of your MarkLogic admin user <br />
 <strong>ADMIN_PASSWORD</strong> - your MarkLogic admin password <br />
@@ -59,7 +59,7 @@
 
 <h2>Quick Start</h2>
 
-<p>The following commands are available : thaw|help|freeze|status|cluster|clean|create|setup|refresh|restart|devices|all</p>
+<p>The following commands are available : thaw|help|freeze|status|cluster|clean|create|setup|refresh|restart|devices|remote|all</p>
 
 <p>They are called by typing </p>
 
@@ -80,12 +80,12 @@
 <p>Here is some sample output</p>
 
 <blockquote>
-  <p><code>Run mode is create <br />
-  Created instance i-dc4803a1 <br />
-  Instance not yet in running state <br />
-  Elastic IP 54.243.182.139 added <br />
-  Elastic IP added for host i-dc4803a1 - 54.243.182.139 <br />
-  10G disk volume created</code>   </p>
+  <p><code>Run mode is create</code> <br />
+  <code>Created instance i-dc4803a1</code> <br />
+  <code>Instance not yet in running state</code> <br />
+  <code>Elastic IP 54.243.182.139 added</code> <br />
+  <code>Elastic IP added for host i-dc4803a1 - 54.243.182.139</code> <br />
+  <code>10G disk volume created</code></p>
 </blockquote>
 
 <p>Your instance id ( i-dc4803a1 in the above output ) will be written to host_file.txt. If you are using elastic ips that will be written to elastic_ip.txt.</p>
@@ -93,8 +93,8 @@
 <p><em>ec2setup.sh</em> <strong><i>status</i></strong> will give you some basic status info e.g.</p>
 
 <blockquote>
-  <p><code>Run mode is status <br />
-  Host i-dc4803a1 is in the running state with dns = ec2-54-243-182-139.compute-1.amazonaws.com</code></p>
+  <p><code>Run mode is status</code> <br />
+  <code>Host i-dc4803a1 is in the running state with dns = ec2-54-243-182-139.compute-1.amazonaws.com</code></p>
 </blockquote>
 
 <p>You can also use the Amazon console : <a href="https://console.aws.amazon.com/ec2">https://console.aws.amazon.com/ec2</a></p>
@@ -124,11 +124,11 @@
 <p>This will stop your instance, but will keep your data. The advantage of this is that you do not incur CPU charges, only disk charges. Storage charges are 10c per Gb per month i.e. approx 0.33 cents per day per Gb, or 10 cents per day for 30Gb  - a typical per host charge. The minimum instance charge is 2c per hour or 48c per day ( for the micro instance ) and around 32c per hour or $7.68 per day for large instances. So stopping saves you money. Typical output is</p>
 
 <blockquote>
-  <p><code>Run mode is freeze <br />
-  Stopping host i-052baa78 <br />
-  Instance not yet in stopped state <br />
-  Instance not yet in stopped state <br />
-  Host stopped</code></p>
+  <p><code>Run mode is freeze</code> <br />
+  <code>Stopping host i-052baa78</code> <br />
+  <code>Instance not yet in stopped state</code> <br />
+  <code>Instance not yet in stopped state</code> <br />
+  <code>Host stopped</code>   </p>
 </blockquote>
 
 <p>The opposite of freeze is thaw. You can thaw your instance using</p>
@@ -138,12 +138,12 @@
 <p>This will restart your instance, add your previously defined IPs if USE_ELASTIC_IP = true, </p>
 
 <blockquote>
-  <p><code>Run mode is thaw <br />
-  Starting host i-dc4803a1 <br />
-  Instance not yet in running state <br />
-  Elastic IP added for host i-dc4803a1 - Address:54.243.182.139 <br />
-  Check device mapping ... <br />
-  Host started</code></p>
+  <p><code>Run mode is thaw</code> <br />
+  <code>Starting host i-dc4803a1</code> <br />
+  <code>Instance not yet in running state</code> <br />
+  <code>Elastic IP added for host i-dc4803a1 - Address:54.243.182.139</code> <br />
+  <code>Check device mapping ...</code> <br />
+  <code>Host started</code>   </p>
 </blockquote>
 
 <p>If using RedHat, your block storage device mapping ( see above ) will be re-mapped using ln. This can sometimes fail  - see below for what to do if this happens.</p>
@@ -159,35 +159,35 @@
 <p>Here is some sample output</p>
 
 <blockquote>
-  <p><code>Run mode is refresh <br />
-  Refreshing i-dc4803a1 <br />
-  Stopping MarkLogic <br />
-  Stopping MarkLogic: .[  OK  ] <br />
-  Remove previous install <br />
-  Install MarkLogic <br />
-  Loaded plugins: amazon-id, product-id, rhui-lb, security, subscription-manager <br />
-  Updating certificate-based repositories. <br />
-  Unable to read consumer identity <br />
-  Setting up Install Process <br />
-  Examining MarkLogic-6.0-1.1.x86\_64.rpm: MarkLogic-6.0-1.1.x86\_64 <br />
-  MarkLogic-6.0-1.1.x86\_64.rpm: does not update installed package. <br />
-  Error: Nothing to do <br />
-  Starting MarkLogic: [  OK  ] <br />
-  Stopping MarkLogic: .[  OK  ] <br />
-  Starting MarkLogic: [  OK  ] <br />
-  Configuring auth for &lt;http://localhost:8001&gt; <br />
-  2. Installing <br />
-  3. Starting MarkLogic Instance <br />
-  4. Configuring licence details <br />
-  5. Accepting EULA <br />
-  6. Triggering initial application server config <br />
-  7a. Restarting Server <br />
-  7b. Restarting Server <br />
-  8. Configuring Admin user (security) <br />
-  9. Testing Admin Connection <br />
-  Move set host name script <br />
-  Setting host name <br />
-  Script completed, visit &lt;http://ec2-54-243-182-139.compute-1.amazonaws.com:8001&gt; to access the admin interface.</code></p>
+  <p><code>Run mode is refresh</code> <br />
+  <code>Refreshing i-dc4803a1</code> <br />
+  <code>Stopping MarkLogic</code> <br />
+  <code>Stopping MarkLogic: .[  OK  ]</code> <br />
+  <code>Remove previous install</code> <br />
+  <code>Install MarkLogic</code> <br />
+  <code>Loaded plugins: amazon-id, product-id, rhui-lb, security, subscription-manager</code> <br />
+  <code>Updating certificate-based repositories.</code> <br />
+  <code>Unable to read consumer identity</code> <br />
+  <code>Setting up Install Process</code> <br />
+  <code>Examining MarkLogic-6.0-1.1.x86\_64.rpm: MarkLogic-6.0-1.1.x86\_64</code> <br />
+  <code>MarkLogic-6.0-1.1.x86\_64.rpm: does not update installed package.</code> <br />
+  <code>Error: Nothing to do</code> <br />
+  <code>Starting MarkLogic: [  OK  ]</code> <br />
+  <code>Stopping MarkLogic: .[  OK  ]</code> <br />
+  <code>Starting MarkLogic: [  OK  ]</code> <br />
+  <code>Configuring auth for &lt;http://localhost:8001&gt;</code> <br />
+  <code>2. Installing</code> <br />
+  <code>3. Starting MarkLogic Instance</code> <br />
+  <code>4. Configuring licence details</code> <br />
+  <code>5. Accepting EULA</code> <br />
+  <code>6. Triggering initial application server config</code> <br />
+  <code>7a. Restarting Server</code> <br />
+  <code>7b. Restarting Server</code> <br />
+  <code>8. Configuring Admin user (security)</code> <br />
+  <code>9. Testing Admin Connection</code> <br />
+  <code>Move set host name script</code> <br />
+  <code>Setting host name</code> <br />
+  <code>Script completed, visit &lt;http://ec2-54-243-182-139.compute-1.amazonaws.com:8001&gt; to access the admin interface.</code>   </p>
 </blockquote>
 
 <p>Finally, you can run the clean command </p>
@@ -197,11 +197,11 @@
 <p>This will terminate your instance and remove any associated elastic ips and block storage. Sample output : </p>
 
 <blockquote>
-  <p><code>Run mode is clean <br />
-  Terminating host i-dc4803a1 <br />
-  Instance not yet in terminated state <br />
-  Instance not yet in terminated state <br />
-  Removing volume vol-e155519b</code></p>
+  <p><code>Run mode is clean</code> <br />
+  <code>Terminating host i-dc4803a1</code> <br />
+  <code>Instance not yet in terminated state</code> <br />
+  <code>Instance not yet in terminated state</code> <br />
+  <code>Removing volume vol-e155519b</code></p>
 </blockquote>
 
 <h2>Running commands with an argument</h2>
@@ -230,22 +230,22 @@
 <p><em>ec2setup.sh</em> <strong><i>cluster</i></strong></p>
 
 <blockquote>
-  <p><code>Run mode is cluster <br />
-  Configuring auth for http://ec2-54-243-185-5.compute-1.amazonaws.com:8001 <br />
-  Configuring auth for http://ec2-54-243-185-6.compute-1.amazonaws.com:8001 <br />
-  Joining Cluster <br />
-  Configuring auth for http://ec2-54-243-185-7.compute-1.amazonaws.com:8001 <br />
-  Joining Cluster <br />
-  Configuring auth for http://ec2-54-243-185-5.compute-1.amazonaws.com:8001 <br />
-  Joining Cluster II <br />
-  Configuring auth for http://ec2-54-243-185-6.compute-1.amazonaws.com:8001 <br />
-  Restarting... <br />
-  Configuring auth for http://ec2-54-243-185-5.compute-1.amazonaws.com:8001 <br />
-  Joining Cluster II <br />
-  Configuring auth for http://ec2-54-243-185-7.compute-1.amazonaws.com:8001 <br />
-  Restarting... <br />
-  Configuring auth for http://ec2-54-243-185-5.compute-1.amazonaws.com:8001 <br />
-  Setting cluster name to Master</code></p>
+  <p><code>Run mode is cluster</code> <br />
+  <code>Configuring auth for http://ec2-54-243-185-5.compute-1.amazonaws.com:8001</code> <br />
+  <code>Configuring auth for http://ec2-54-243-185-6.compute-1.amazonaws.com:8001</code> <br />
+  <code>Joining Cluster</code> <br />
+  <code>Configuring auth for http://ec2-54-243-185-7.compute-1.amazonaws.com:8001</code> <br />
+  <code>Joining Cluster</code> <br />
+  <code>Configuring auth for http://ec2-54-243-185-5.compute-1.amazonaws.com:8001</code> <br />
+  <code>Joining Cluster II</code> <br />
+  <code>Configuring auth for http://ec2-54-243-185-6.compute-1.amazonaws.com:8001</code> <br />
+  <code>Restarting...</code> <br />
+  <code>Configuring auth for http://ec2-54-243-185-5.compute-1.amazonaws.com:8001</code> <br />
+  <code>Joining Cluster II</code> <br />
+  <code>Configuring auth for http://ec2-54-243-185-7.compute-1.amazonaws.com:8001</code> <br />
+  <code>Restarting...</code> <br />
+  <code>Configuring auth for http://ec2-54-243-185-5.compute-1.amazonaws.com:8001</code> <br />
+  <code>Setting cluster name to Master</code>   `</p>
 </blockquote>
 
 <p>Clustering requires two calls for each host - one to add to the cluster and one to write the cluster info back to the original host. Hosts are restarted following addition to a cluster. Finally the cluster is named using <strong>CLUSTER_NAME</strong> from config.ini</p>
@@ -260,7 +260,7 @@
 
 <h2>Other Commands</h2>
 
-<p>We have not yet restart,devices and help.</p>
+<p>We have not yet looked at restart, devices, remote and help.</p>
 
 <p>When thawing a cluster, with elastic ips, in theory you can start using this straight away. In practice, the block storage, where the MarkLogic data assets are kept will have been dismounted and re-mounted, and the elastic ip assigned after host startup, which may leave a running MarkLogic process in an non-usable state. So </p>
 
@@ -279,6 +279,12 @@
 <p><em>ec2setup.sh</em> <strong><i>help</i></strong></p>
 
 <p>gives you a list of commands</p>
+
+<p>To log into a box at the command line do</p>
+
+<p><em>ec2setup.sh</em> <strong><i>remote index</i></strong></p>
+
+<p>You will be logged in using ssh if the cluster is a UNIX cluster, and using powershell if the cluster is Windows based.</p>
 
 <h2>Elastic IPs</h2>
 
@@ -313,4 +319,22 @@
 <strong>PYTHON_EXE</strong> = python-2.6.amd64.msi <br />
 <strong>PYTHON_INSTALL_DIR</strong> = c:\python26   </p>
 
-<p>We also specify the python install location for windows, and it's install location.</p>
+<p>We also specify the python install location for windows, and its install location.</p>
+
+<h2>Parallelized Execution</h2>
+
+<p>The script ec2setup-parallel.sh can be used to execute commands in parallel. For instance</p>
+
+<p><em>ec2setup-parallel.sh</em> <strong><i>setup</i></strong></p>
+
+<p>will execute <em>ec2setup.sh</em> <strong><i>setup</i></strong> for each node in host_file.txt, but will execute in parallel.</p>
+
+<p>Other commands that can be executed in this way are thaw, freeze, clean, create, setup, refresh, restart, devices.</p>
+
+<p><em>ec2setup-parallel.sh</em> <strong><i>all</i></strong></p>
+
+<p>will execute </p>
+
+<p><em>ec2setup-parallel.sh</em> <strong><i>create</i></strong> <br />
+<em>ec2setup-parallel.sh</em> <strong><i>setup</i></strong> <br />
+<em>ec2setup-parallel.sh</em> <strong><i>cluster</i></strong>  </p>

@@ -319,6 +319,24 @@ __PYTHON\_INSTALL\_DIR__ = c:\python26
 
 We also specify the python install location for windows, and its install location.
 
+Parallelized Execution
+----------------------
+
+The script ec2setup-parallel.sh can be used to execute commands in parallel. For instance
+
+_ec2setup-parallel.sh_ __<i>setup</i>__
+
+will execute _ec2setup.sh_ __<i>setup</i>__ for each node in host\_file.txt, but will execute in parallel.
+
+Other commands that can be executed in this way are thaw, freeze, clean, create, setup, refresh, restart, devices.
+
+_ec2setup-parallel.sh_ __<i>all</i>__
+
+will execute 
+
+_ec2setup-parallel.sh_ __<i>create</i>__  
+_ec2setup-parallel.sh_ __<i>setup</i>__  
+_ec2setup-parallel.sh_ __<i>cluster</i>__  
 
 
 
