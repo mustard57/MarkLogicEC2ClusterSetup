@@ -254,7 +254,7 @@ def createHost():
 		
 	reservation = ec2.run_instances(image_id=MarkLogicEC2Config.getImageID(),instance_type=MarkLogicEC2Config.INSTANCE_SIZE,key_name=MarkLogicEC2Config.EC2_KEY_PAIR_NAME,security_groups=[MarkLogicEC2Config.EC2_SECURITY_GROUP_NAME],user_data=cmd)
 	
-	instance = ec2.get_all_instances()[-1].instances[0]
+	instance = reservation.instances[0]
 	print "Created instance "+ instance.id
 	
 	waitForRunningState(str(instance.id))
