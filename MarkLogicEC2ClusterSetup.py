@@ -365,7 +365,7 @@ def setupRedHatHost(host):
 	MarkLogicEC2Lib.sys("Sort out device mapping ...",ssh_cmd + "'" + lnCommand() + "'")
 	
 	MarkLogicEC2Lib.sys("Remove host firewall",ssh_cmd+"'service iptables save ; service iptables stop ; chkconfig iptables off'")
-	MarkLogicEC2Lib.sys("Download MarkLogic install",ssh_cmd + "'cd "+MarkLogicEC2Config.INSTALL_DIR+";wget -nv "+MarkLogicEC2Config.MARKLOGIC_DOWNLOAD_URL + MarkLogicEC2Config.MARKLOGIC_EXE+"'")
+	MarkLogicEC2Lib.sys("Download MarkLogic install",ssh_cmd + "'cd "+MarkLogicEC2Config.INSTALL_DIR+";curl -O -XPOST -d \"email="+MarkLogicEC2Config.MARKLOGIC_DEVELOPER_LOGIN+"&pass=" + MarkLogicEC2Config.MARKLOGIC_DEVELOPER_PASS+ "\" "+MarkLogicEC2Config.MARKLOGIC_DOWNLOAD_URL + MarkLogicEC2Config.MARKLOGIC_EXE+"'")
 	MarkLogicEC2Lib.sys("Copy required files","scp config.ini MarkLogicEC2Config.py MarkLogicEC2Lib.py for_remote/* root@"+dns_name+":"+MarkLogicEC2Config.INSTALL_DIR)
 	MarkLogicEC2Lib.sys("Install MarkLogic",ssh_cmd+"cd "+MarkLogicEC2Config.INSTALL_DIR+";python MarkLogicSetup.py")
 	

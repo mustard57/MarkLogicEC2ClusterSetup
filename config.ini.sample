@@ -22,6 +22,8 @@ MARKLOGIC_DOWNLOAD_URL=http://developer.marklogic.com/download/binaries/6.0/
 PYTHON_DOWNLOAD_URL=http://www.python.org/ftp/python/2.6/
 PYTHON_EXE=python-2.6.amd64.msi
 PYTHON_INSTALL_DIR=c:\python26
+MARKLOGIC_DEVELOPER_LOGIN=Email you registered under for http://developer.marklogic.com
+MARKLOGIC_DEVELOPER_PASS=Password for your login to http://developer.marklogic.com
 [Constants]
 HOST_FILE=host_file.txt
 ELASTIC_IP_FILE=elastic_ip.txt
