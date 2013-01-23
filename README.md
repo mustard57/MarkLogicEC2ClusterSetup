@@ -322,7 +322,7 @@ We also specify the python install location for windows, and its install locatio
 You need a login to the MarkLogic developer site to download the install.
 
 __MARKLOGIC\_DEVELOPER\_LOGIN__ = the email address you have registered under
-__MARKLOGIC\_DEVELOPER\_PASS__ = the password to log you into the developer site
+__MARKLOGIC\_DEVELOPER\_PASS = the password to log you into the developer site
 
 Parallelized Execution
 ----------------------
