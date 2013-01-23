@@ -60,6 +60,11 @@ __LICENSE\_KEY__ - the 12 * 4 char ( plus hyphens ) license key you will be usin
 __LICENSEE__ - the licensee name    
 __LICENSE\_TYPE__ - if you have a full MarkLogic key use 'development', otherwise 'evaluation' - though this probably will not have enterprise capability.   
 
+In the software section, you need a login to the MarkLogic developer site, http://developer.marklogic.com, to download the install.
+
+__MARKLOGIC\_DEVELOPER\_LOGIN__ = the email address you have registered under	
+__MARKLOGIC\_DEVELOPER\_PASS__ = the password to log you into the developer site
+
 Quick Start
 -----------
 
@@ -321,7 +326,7 @@ We also specify the python install location for windows, and its install locatio
 
 You need a login to the MarkLogic developer site to download the install.
 
-__MARKLOGIC\_DEVELOPER\_LOGIN__ = the email address you have registered under
+__MARKLOGIC\_DEVELOPER\_LOGIN__ = the email address you have registered under	
 __MARKLOGIC\_DEVELOPER\_PASS__ = the password to log you into the developer site
 
 Parallelized Execution
