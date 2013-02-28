@@ -101,6 +101,10 @@ def stopInstance(host):
 		print "Host " + host + " already stopped"
 
 def getInstance(host):
+	while not(ec2.get_all_instances(host)) :
+		time.sleep(5)
+	while not(ec2.get_all_instances(host)[0].instances) :
+		time.sleep(5)
 	return ec2.get_all_instances(host)[0].instances[0]
 
 def getInstanceStatus(host):
