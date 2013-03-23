@@ -1,0 +1,40 @@
+[Configuration]
+RSA_PRIVATE_KEY=c:\users\ktune\.ssh\id_rsa
+HOST_COUNT=3
+ADMIN_USER_NAME=admin
+ADMIN_PASSWORD=armando
+CLUSTER_NAME=Slave
+USE_ELASTIC_IP=FALSE
+MSTSC_PASSWORD=abcdef
+INSTANCE_SIZE=m1.small
+INSTANCE_TYPE=RedHat
+DISK_CAPACITY=10
+EC2_SECURITY_GROUP_NAME=MarkLogic
+EC2_KEY_PAIR_NAME=HP
+[License Details]
+LICENSE_KEY=3089-1DA9-6A43-4A34-893F-3E91-DE86-84BA-A95D-EA6B-53EA-97DE-BEB0-5CD1
+LICENSEE=MarkLogic - Ken Tune
+LICENSE_TYPE=development
+[Software]
+MARKLOGIC_WINDOWS_EXE=MarkLogic-6.0-1.1-amd64.msi
+MARKLOGIC_REDHAT_EXE=MarkLogic-6.0-1.1.x86_64.rpm
+MARKLOGIC_DOWNLOAD_URL=http://developer.marklogic.com/download/binaries/6.0/
+PYTHON_DOWNLOAD_URL=http://www.python.org/ftp/python/2.6/
+PYTHON_EXE=python-2.6.amd64.msi
+PYTHON_INSTALL_DIR=c:\python26
+MARKLOGIC_DEVELOPER_LOGIN=ken.tune@marklogic.com
+MARKLOGIC_DEVELOPER_PASS=marklogic13
+[Constants]
+HOST_FILE=host_file.txt
+ELASTIC_IP_FILE=elastic_ip.txt
+EC2_ELASTIC_IP_LIMIT=5
+WINDOWS_IMAGE_ID=ami-71b50018
+REDHAT_IMAGE_ID=ami-cc5af9a5
+WINDOWS_INSTALL_DIR=c:\users\administrator\
+REDHAT_INSTALL_DIR=/tmp
+MARKLOGIC_WINDOWS_ROOT=C:\Program Files\MarkLogic\									 
+MARKLOGIC_REDHAT_ROOT=/opt/MarkLogic/
+MARKLOGIC_REDHAT_DATA_ROOT=/var/opt/MarkLogic
+EBS_DEVICE_NAME=/dev/sdh
+EXPECTED_EBS_DEVICE_NAME=/dev/sdf
+ACTUAL_EBS_DEVICE_NAME=/dev/xvdl
