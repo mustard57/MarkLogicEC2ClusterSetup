@@ -20,16 +20,17 @@ def getAvailableHosts():
 	return hosts
 
 def getIPs():			
-	ips = []
+	ips = {}
 	if(os.path.isfile(MarkLogicEC2Config.ELASTIC_IP_FILE)):
 		f = open(MarkLogicEC2Config.ELASTIC_IP_FILE)
 		for line in f.xreadlines():
-			ips.append(line.strip())
+			a = line.strip().split(",")
+			ips[a[0]] = a[1]
 	return ips
 	
 	
 def getHostIP(host)	:
-	return getIPs()[getAvailableHosts().index(host)]
+	return getIPs()[host]
 
 def getHostForRequest(input):
 	host = ""
@@ -224,10 +225,14 @@ def cleanHost(host):
 		
 	if(MarkLogicEC2Config.USE_ELASTIC_IP):	
 		if getElasticIP(host):		
+			print "Removing elastic ip "+str(getElasticIP(host))
 			getElasticIP(host).release()
 	
 	for file in (adminFileName(host),sessionFileName(host),reinstallFileName(host),RDPFileName(host),sshFileName(host)):
 		removeFile(file)
+	
+	if(MarkLogicEC2Config.isRedHat()):
+		MarkLogicEC2Lib.sys("Remove from known hosts file","ssh-keygen -R "+dns_name)
 	
 def clearDirectory(dirName):
 	if os.path.isdir(dirName):
@@ -251,7 +256,7 @@ def removeDirectories():
 
 def removeIPs():
 	for address in ec2.get_all_addresses():
-		for ip in getIPs():
+		for ip in getIPs().values():
 			if address.public_ip == ip:
 				address.release()
 				print ip + " removed"
@@ -284,8 +289,10 @@ def createHost():
 	if MarkLogicEC2Config.isRedHat():
 		createSSHLink(str(instance.id))
 		volume = ec2.create_volume(MarkLogicEC2Config.DISK_CAPACITY,instance.placement,"")
+		print "Volume status is "+volume.status
 		volume.attach(instance.id,MarkLogicEC2Config.EBS_DEVICE_NAME)
 		print MarkLogicEC2Config.DISK_CAPACITY + "G disk volume created"
+		print "Volume status is "+volume.status		
 	print "Finishing create host at "+time.strftime("%H:%M:%S", time.gmtime())
 
 		
@@ -297,7 +304,7 @@ def allocateIP(host):
 		ec2.associate_address(instance_id=host,public_ip=ip.public_ip)
 		print "Elastic IP "+ip.public_ip+" added"
 		f = open(MarkLogicEC2Config.ELASTIC_IP_FILE,"a")
-		f.write(ip.public_ip+"\n")
+		f.write(host+","+ip.public_ip+"\n")
 		f.close()	
 	
 
