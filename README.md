@@ -317,7 +317,7 @@ The versions of MarkLogic are used here, and the download location e.g.
 
 __MARKLOGIC\_WINDOWS\_EXE__ = MarkLogic-6.0-1.1-amd64.msi   
 __MARKLOGIC\_REDHAT\_EXE__ = MarkLogic-6.0-1.1.x86\_64.rpm   
-__MARKLOGIC\_DOWNLOAD\_URL__ = http://developer.marklogic.com/download/binaries/6.0/   
+__MARKLOGIC\_DOWNLOAD\_URL__ = http://developer.marklogic.com/download/binaries/6.0/   *** This used to work, but no longer - best thing to do now is to copy the install to an ftp directory, and use the value of that directory for this parameter value e.g. ftp://ftp.mydomain.com/directory/ - note the trailing slash. Put your username and password in the URL if not using anonymous ftp i.e. ftp://username:password@ftp.domain.com/directory/
 __PYTHON\_DOWNLOAD\_URL__ = http://www.python.org/ftp/python/2.6/   
 __PYTHON\_EXE__ = python-2.6.amd64.msi   
 __PYTHON\_INSTALL\_DIR__ = c:\python26   

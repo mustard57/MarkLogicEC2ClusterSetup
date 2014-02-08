@@ -289,7 +289,10 @@ def createHost():
 	if MarkLogicEC2Config.isRedHat():
 		createSSHLink(str(instance.id))
 		volume = ec2.create_volume(MarkLogicEC2Config.DISK_CAPACITY,instance.placement,"")
-		print "Volume status is "+volume.status
+		while volume.status != 'available':
+			print "Volume status is "+volume.status
+			time.sleep(5)
+			volume = ec2.get_all_volumes([str(volume.id)])[0]
 		volume.attach(instance.id,MarkLogicEC2Config.EBS_DEVICE_NAME)
 		print MarkLogicEC2Config.DISK_CAPACITY + "G disk volume created"
 		print "Volume status is "+volume.status		
@@ -351,7 +354,7 @@ def setupWindowsHost(host):
 	f.write("copy-item -force -path MarkLogicEC2Lib.py -destination \\\\"+dns_name+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"\n")
 	f.write("invoke-command -session $session -filepath pws\downloadpython.ps1\n")	
 	
-	f.write("invoke-command -session $session -filepath pws\downloadmarklogic.ps1\n")	
+	f.write("invoke-command -session $session -filepath pws\marklogic.ps1\n")	
 	f.write("sleep 30\n")
 	f.write("echo 'installing python'\n")
 	f.write("invoke-command -session $session {"+ MarkLogicEC2Config.INSTALL_DIR + MarkLogicEC2Config.PYTHON_EXE+" /passive /quiet}\n")	
@@ -384,7 +387,7 @@ def setupRedHatHost(host):
 	MarkLogicEC2Lib.sys("Sort out device mapping ...",ssh_cmd + "'" + lnCommand() + "'")
 	
 	MarkLogicEC2Lib.sys("Remove host firewall",ssh_cmd+"'service iptables save ; service iptables stop ; chkconfig iptables off'")
-	MarkLogicEC2Lib.sys("Download MarkLogic install",ssh_cmd + "'cd "+MarkLogicEC2Config.INSTALL_DIR+";curl -O -XPOST -d \"email="+MarkLogicEC2Config.MARKLOGIC_DEVELOPER_LOGIN+"&pass=" + MarkLogicEC2Config.MARKLOGIC_DEVELOPER_PASS+ "\" "+MarkLogicEC2Config.MARKLOGIC_DOWNLOAD_URL + MarkLogicEC2Config.MARKLOGIC_EXE+"'")
+	MarkLogicEC2Lib.sys("Download MarkLogic install",ssh_cmd + "'cd "+MarkLogicEC2Config.INSTALL_DIR+";curl -O "+MarkLogicEC2Config.MARKLOGIC_DOWNLOAD_URL + MarkLogicEC2Config.MARKLOGIC_EXE+"'")
 	MarkLogicEC2Lib.sys("Copy required files","scp config.ini MarkLogicEC2Config.py MarkLogicEC2Lib.py for_remote/* root@"+dns_name+":"+MarkLogicEC2Config.INSTALL_DIR)
 	MarkLogicEC2Lib.sys("Install MarkLogic",ssh_cmd+"\"cd "+MarkLogicEC2Config.INSTALL_DIR+";python MarkLogicSetup.py\"")
 	
@@ -459,7 +462,7 @@ def createMarkLogicDownloadScript():
 	if not(os.path.isfile(fileName)):
 		f = open(fileName,"w")
 		f.write('$clnt = new-object System.Net.WebClient\n')
-		f.write('$url = "'+MarkLogicEC2Config.MARKLOGIC_DOWNLOAD_URL + MarkLogicEC2Config.MARKLOGIC_EXE+'"\n')
+		f.write('$url = "'+MarkLogicEC2Config.MARKLOGIC_DOWNLOAD_URL + MarkLogicEC2Config.MARKLOGIC_EXE+'?email='+MarkLogicEC2Config.MARKLOGIC_DEVELOPER_LOGIN+'&pass='+MarkLogicEC2Config.MARKLOGIC_DEVELOPER_PASS+'"\n')		
 		f.write('$file = "'+MarkLogicEC2Config.INSTALL_DIR + MarkLogicEC2Config.MARKLOGIC_EXE+'"\n')
 		f.write('$file\n')
 		f.write('$clnt.DownloadFile($url,$file)\n')
