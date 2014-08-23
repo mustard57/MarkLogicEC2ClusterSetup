@@ -7,6 +7,7 @@ import os
 import glob
 import rsa
 import re
+import socket
 
 SLEEP_PERIOD = 30
 ec2 = boto.connect_ec2()
@@ -321,7 +322,8 @@ def setupWindowsHost(host):
 	while True:		
 		dns_name =  instance.public_dns_name
 		instance_id =  instance.id
-
+		ip  = repr(socket.gethostbyname(dns_name)).replace("'","")
+		
 		# Get Encrypted password
 		encrypted_pword = ec2.get_password_data(instance.id).strip("\n\r\t").decode('base64')
 
@@ -341,34 +343,36 @@ def setupWindowsHost(host):
 	createMarkLogicDownloadScript()
 	
 	# Create server setup script
-	f = open(MarkLogicEC2Config.POWERSHELL_DIR  +"\\server-setup.ps1","w")
-	f.write('Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System -Name LocalAccountTokenFilterPolicy -Value 1 -Type DWord\n')
-	f.write('Set-Item WSMan:\\localhost\\Client\TrustedHosts -Value ' + dns_name + " -Force\n")
-	f.write("$pw = convertto-securestring -AsPlainText -Force -String '"+password+"'\n")
-	f.write('$cred = new-object -typename System.Management.Automation.PSCredential -argumentlist "'+instance_id+'\Administrator",$pw\n')
-	f.write('$session = new-pssession -computername '+dns_name + ' -credential $cred\n')
-	f.write("net use \\\\"+dns_name+" '" + password + "' /user:Administrator\n")
-	f.write("copy-item -force -path for_remote\* -destination \\\\"+dns_name+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"\n")
-	f.write("copy-item -force -path config.ini -destination \\\\"+dns_name+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"\n")
-	f.write("copy-item -force -path MarkLogicEC2Config.py -destination \\\\"+dns_name+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"\n")
-	f.write("copy-item -force -path MarkLogicEC2Lib.py -destination \\\\"+dns_name+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"\n")
-	f.write("invoke-command -session $session -filepath pws\downloadpython.ps1\n")	
-	
-	f.write("invoke-command -session $session -filepath pws\marklogic.ps1\n")	
-	f.write("sleep 30\n")
-	f.write("echo 'installing python'\n")
-	f.write("invoke-command -session $session {"+ MarkLogicEC2Config.INSTALL_DIR + MarkLogicEC2Config.PYTHON_EXE+" /passive /quiet}\n")	
-	f.write("sleep 60\n")
-	f.write("echo 'setting up MarkLogic'\n")
-	f.write("invoke-command -session $session {cd " + MarkLogicEC2Config.INSTALL_DIR + " ; " + MarkLogicEC2Config.PYTHON_INSTALL_DIR + "\\python MarkLogicSetup.py}\n")
-	f.write("invoke-command -session $session {Set-Service MarkLogic -startuptype 'Automatic'}\n")
-	f.write("invoke-command -session $session {netsh firewall set opmode disable}\n")
-	if(MarkLogicEC2Config.MSTSC_PASSWORD):
-		f.write('invoke-command -session $session {$account = [ADSI]("WinNT://$env:COMPUTERNAME/Administrator,user") ; $account.psbase.invoke("setpassword","'+MarkLogicEC2Config.MSTSC_PASSWORD+'") }\n')
-		print "Setting mstsc password as requested"
-	else:
-		print "MSTSC password set not requested - will use password set by EC2"
-	f.close()
+	fileName = MarkLogicEC2Config.POWERSHELL_DIR  +"\\server-setup.ps1"
+	if not(os.path.isfile(fileName)):	
+		f = open(fileName,"w")
+		f.write('Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System -Name LocalAccountTokenFilterPolicy -Value 1 -Type DWord\n')
+		f.write('Set-Item WSMan:\\localhost\\Client\TrustedHosts -Value ' + dns_name + " -Force\n")
+		f.write("$pw = convertto-securestring -AsPlainText -Force -String '"+password+"'\n")
+		f.write('$cred = new-object -typename System.Management.Automation.PSCredential -argumentlist "'+instance_id+'\Administrator",$pw\n')
+		f.write('$session = new-pssession -computername '+dns_name + ' -credential $cred\n')
+		f.write("net use \\\\"+ip+" '" + password + "' /user:Administrator\n")
+		f.write("copy-item -force -path for_remote\* -destination '\\\\"+ip+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"'\n")
+		f.write("copy-item -force -path config.ini -destination '\\\\"+ip+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"'\n")
+		f.write("copy-item -force -path MarkLogicEC2Config.py -destination '\\\\"+ip+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"'\n")
+		f.write("copy-item -force -path MarkLogicEC2Lib.py -destination '\\\\"+ip+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"'\n")
+		f.write("invoke-command -session $session -filepath pws\downloadpython.ps1\n")	
+		
+		f.write("invoke-command -session $session -filepath pws\downloadmarklogic.ps1\n")	
+		f.write("sleep 30\n")
+		f.write("echo 'installing python'\n")
+		f.write("invoke-command -session $session {cd '" + MarkLogicEC2Config.INSTALL_DIR + "' ; " + ".\\"+MarkLogicEC2Config.PYTHON_EXE+" /passive /quiet}\n")	
+		f.write("sleep 60\n")
+		f.write("echo 'setting up MarkLogic'\n")
+		f.write("invoke-command -session $session {cd '" + MarkLogicEC2Config.INSTALL_DIR + "' ; " + MarkLogicEC2Config.PYTHON_INSTALL_DIR + "\\python MarkLogicSetup.py}\n")
+		f.write("invoke-command -session $session {Set-Service MarkLogic -startuptype 'Automatic'}\n")
+		f.write("invoke-command -session $session {netsh firewall set opmode disable}\n")
+		if(MarkLogicEC2Config.MSTSC_PASSWORD):
+			f.write('invoke-command -session $session {$account = [ADSI]("WinNT://$env:COMPUTERNAME/Administrator,user") ; $account.psbase.invoke("setpassword","'+MarkLogicEC2Config.MSTSC_PASSWORD+'") }\n')
+			print "Setting mstsc password as requested"
+		else:
+			print "MSTSC password set not requested - will use password set by EC2"
+		f.close()
 
 	print dns_name
 	createRDPLink(host)
@@ -388,7 +392,7 @@ def setupRedHatHost(host):
 	
 	MarkLogicEC2Lib.sys("Remove host firewall",ssh_cmd+"'service iptables save ; service iptables stop ; chkconfig iptables off'")
 	MarkLogicEC2Lib.sys("Download MarkLogic install",ssh_cmd + "'cd "+MarkLogicEC2Config.INSTALL_DIR+";curl -O "+MarkLogicEC2Config.MARKLOGIC_DOWNLOAD_URL + MarkLogicEC2Config.MARKLOGIC_EXE+"'")
-	MarkLogicEC2Lib.sys("Copy required files","scp config.ini MarkLogicEC2Config.py MarkLogicEC2Lib.py for_remote/* root@"+dns_name+":"+MarkLogicEC2Config.INSTALL_DIR)
+	MarkLogicEC2Lib.sys("Copy required files","scp config.ini MarkLogicEC2Config.py MarkLogicEC2Lib.py for_remote/* ec2-user@"+dns_name+":"+MarkLogicEC2Config.INSTALL_DIR)
 	MarkLogicEC2Lib.sys("Install MarkLogic",ssh_cmd+"\"cd "+MarkLogicEC2Config.INSTALL_DIR+";python MarkLogicSetup.py\"")
 	
 	createAdminConsoleLink(host)
@@ -462,10 +466,11 @@ def createMarkLogicDownloadScript():
 	if not(os.path.isfile(fileName)):
 		f = open(fileName,"w")
 		f.write('$clnt = new-object System.Net.WebClient\n')
-		f.write('$url = "'+MarkLogicEC2Config.MARKLOGIC_DOWNLOAD_URL + MarkLogicEC2Config.MARKLOGIC_EXE+'?email='+MarkLogicEC2Config.MARKLOGIC_DEVELOPER_LOGIN+'&pass='+MarkLogicEC2Config.MARKLOGIC_DEVELOPER_PASS+'"\n')		
+		f.write('$url = "'+MarkLogicEC2Config.MARKLOGIC_DOWNLOAD_URL + MarkLogicEC2Config.MARKLOGIC_EXE+'"\n')		
 		f.write('$file = "'+MarkLogicEC2Config.INSTALL_DIR + MarkLogicEC2Config.MARKLOGIC_EXE+'"\n')
+		f.write('$uri = New-Object System.Uri($url)\n')		
 		f.write('$file\n')
-		f.write('$clnt.DownloadFile($url,$file)\n')
+		f.write('$clnt.DownloadFile($uri,$file)\n')
 		f.close()
 
 def createAdminConsoleLink(host):
@@ -564,7 +569,7 @@ def removeFile(fileName):
 		os.remove(fileName)
 
 def sshToBoxString(dns_name):
-	return "ssh -o StrictHostKeyChecking=no root@"+dns_name+" "
+	return "ssh -o StrictHostKeyChecking=no ec2-user@"+dns_name+" "
 
 def lnCommand():
 	return "ln "+MarkLogicEC2Config.ACTUAL_EBS_DEVICE_NAME+" "+MarkLogicEC2Config.EXPECTED_EBS_DEVICE_NAME	
