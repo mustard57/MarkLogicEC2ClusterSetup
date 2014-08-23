@@ -356,6 +356,7 @@ def setupWindowsHost(host):
 		f.write("copy-item -force -path config.ini -destination '\\\\"+ip+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"'\n")
 		f.write("copy-item -force -path MarkLogicEC2Config.py -destination '\\\\"+ip+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"'\n")
 		f.write("copy-item -force -path MarkLogicEC2Lib.py -destination '\\\\"+ip+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"'\n")
+		f.write("invoke-command -session $session {netsh firewall set opmode disable disable}\n")		
 		f.write("invoke-command -session $session -filepath pws\downloadpython.ps1\n")	
 		
 		f.write("invoke-command -session $session -filepath pws\downloadmarklogic.ps1\n")	
@@ -392,7 +393,7 @@ def setupRedHatHost(host):
 	
 	MarkLogicEC2Lib.sys("Remove host firewall",ssh_cmd+"'service iptables save ; service iptables stop ; chkconfig iptables off'")
 	MarkLogicEC2Lib.sys("Download MarkLogic install",ssh_cmd + "'cd "+MarkLogicEC2Config.INSTALL_DIR+";curl -O "+MarkLogicEC2Config.MARKLOGIC_DOWNLOAD_URL + MarkLogicEC2Config.MARKLOGIC_EXE+"'")
-	MarkLogicEC2Lib.sys("Copy required files","scp config.ini MarkLogicEC2Config.py MarkLogicEC2Lib.py for_remote/* ec2-user@"+dns_name+":"+MarkLogicEC2Config.INSTALL_DIR)
+	MarkLogicEC2Lib.sys("Copy required files","scp config.ini MarkLogicEC2Config.py MarkLogicEC2Lib.py for_remote/* root@"+dns_name+":"+MarkLogicEC2Config.INSTALL_DIR)
 	MarkLogicEC2Lib.sys("Install MarkLogic",ssh_cmd+"\"cd "+MarkLogicEC2Config.INSTALL_DIR+";python MarkLogicSetup.py\"")
 	
 	createAdminConsoleLink(host)
@@ -569,7 +570,7 @@ def removeFile(fileName):
 		os.remove(fileName)
 
 def sshToBoxString(dns_name):
-	return "ssh -o StrictHostKeyChecking=no ec2-user@"+dns_name+" "
+	return "ssh -o StrictHostKeyChecking=no root@"+dns_name+" "
 
 def lnCommand():
 	return "ln "+MarkLogicEC2Config.ACTUAL_EBS_DEVICE_NAME+" "+MarkLogicEC2Config.EXPECTED_EBS_DEVICE_NAME	
