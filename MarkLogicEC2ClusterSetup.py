@@ -346,19 +346,24 @@ def setupWindowsHost(host):
 	fileName = MarkLogicEC2Config.POWERSHELL_DIR  +"\\server-setup.ps1"
 	if not(os.path.isfile(fileName)):	
 		f = open(fileName,"w")
+		f.write('echo "Setting up secure access via powershell"\n')
 		f.write('Set-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System -Name LocalAccountTokenFilterPolicy -Value 1 -Type DWord\n')
 		f.write('Set-Item WSMan:\\localhost\\Client\TrustedHosts -Value ' + dns_name + " -Force\n")
 		f.write("$pw = convertto-securestring -AsPlainText -Force -String '"+password+"'\n")
 		f.write('$cred = new-object -typename System.Management.Automation.PSCredential -argumentlist "'+instance_id+'\Administrator",$pw\n')
 		f.write('$session = new-pssession -computername '+dns_name + ' -credential $cred\n')
+		f.write('echo "Setting up access to remote file system - need to use ip address if not on same domain"\n')		
 		f.write("net use \\\\"+ip+" '" + password + "' /user:Administrator\n")
+		f.write('echo "Copying items required for setup"\n')
 		f.write("copy-item -force -path for_remote\* -destination '\\\\"+ip+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"'\n")
 		f.write("copy-item -force -path config.ini -destination '\\\\"+ip+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"'\n")
 		f.write("copy-item -force -path MarkLogicEC2Config.py -destination '\\\\"+ip+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"'\n")
 		f.write("copy-item -force -path MarkLogicEC2Lib.py -destination '\\\\"+ip+"\\"+MarkLogicEC2Config.INSTALL_DIR.replace(":","$")+"'\n")
+		f.write('echo "Disable firewall - ftp will not run in ACTV mode with firewall enabled amongst other things"\n')
 		f.write("invoke-command -session $session {netsh firewall set opmode disable disable}\n")		
-		f.write("invoke-command -session $session -filepath pws\downloadpython.ps1\n")	
-		
+		f.write('echo "Downloading python"\n')
+		f.write("invoke-command -session $session -filepath pws\downloadpython.ps1\n")			
+		f.write('echo "Downloading MarkLogic"\n')		
 		f.write("invoke-command -session $session -filepath pws\downloadmarklogic.ps1\n")	
 		f.write("sleep 30\n")
 		f.write("echo 'installing python'\n")
@@ -367,10 +372,9 @@ def setupWindowsHost(host):
 		f.write("echo 'setting up MarkLogic'\n")
 		f.write("invoke-command -session $session {cd '" + MarkLogicEC2Config.INSTALL_DIR + "' ; " + MarkLogicEC2Config.PYTHON_INSTALL_DIR + "\\python MarkLogicSetup.py}\n")
 		f.write("invoke-command -session $session {Set-Service MarkLogic -startuptype 'Automatic'}\n")
-		f.write("invoke-command -session $session {netsh firewall set opmode disable}\n")
 		if(MarkLogicEC2Config.MSTSC_PASSWORD):
-			f.write('invoke-command -session $session {$account = [ADSI]("WinNT://$env:COMPUTERNAME/Administrator,user") ; $account.psbase.invoke("setpassword","'+MarkLogicEC2Config.MSTSC_PASSWORD+'") }\n')
-			print "Setting mstsc password as requested"
+			#f.write('invoke-command -session $session {$account = [ADSI]("WinNT://$env:COMPUTERNAME/Administrator,user") ; $account.psbase.invoke("setpassword","'+MarkLogicEC2Config.MSTSC_PASSWORD+'") }\n')
+			print "mstsc password will be set as requested"
 		else:
 			print "MSTSC password set not requested - will use password set by EC2"
 		f.close()
@@ -469,9 +473,8 @@ def createMarkLogicDownloadScript():
 		f.write('$clnt = new-object System.Net.WebClient\n')
 		f.write('$url = "'+MarkLogicEC2Config.MARKLOGIC_DOWNLOAD_URL + MarkLogicEC2Config.MARKLOGIC_EXE+'"\n')		
 		f.write('$file = "'+MarkLogicEC2Config.INSTALL_DIR + MarkLogicEC2Config.MARKLOGIC_EXE+'"\n')
-		f.write('$uri = New-Object System.Uri($url)\n')		
-		f.write('$file\n')
-		f.write('$clnt.DownloadFile($uri,$file)\n')
+		# f.write('$uri = New-Object System.Uri($url)\n')		
+		f.write('$clnt.DownloadFile($url,$file)\n')
 		f.close()
 
 def createAdminConsoleLink(host):
@@ -534,7 +537,6 @@ def createPythonDownloadScript():
 		f.write('$clnt = new-object System.Net.WebClient\n')
 		f.write('$url = "'+MarkLogicEC2Config.PYTHON_DOWNLOAD_URL + MarkLogicEC2Config.PYTHON_EXE+'"\n')
 		f.write('$file = "'+MarkLogicEC2Config.INSTALL_DIR+MarkLogicEC2Config.PYTHON_EXE+'"\n')
-		f.write('$file\n')
 		f.write('$clnt.DownloadFile($url,$file)\n')
 		f.close()
 
