@@ -373,7 +373,7 @@ def setupWindowsHost(host):
 		f.write("invoke-command -session $session {cd '" + MarkLogicEC2Config.INSTALL_DIR + "' ; " + MarkLogicEC2Config.PYTHON_INSTALL_DIR + "\\python MarkLogicSetup.py}\n")
 		f.write("invoke-command -session $session {Set-Service MarkLogic -startuptype 'Automatic'}\n")
 		if(MarkLogicEC2Config.MSTSC_PASSWORD):
-			#f.write('invoke-command -session $session {$account = [ADSI]("WinNT://$env:COMPUTERNAME/Administrator,user") ; $account.psbase.invoke("setpassword","'+MarkLogicEC2Config.MSTSC_PASSWORD+'") }\n')
+			f.write('invoke-command -session $session {$account = [ADSI]("WinNT://$env:COMPUTERNAME/Administrator,user") ; $account.psbase.invoke("setpassword","'+MarkLogicEC2Config.MSTSC_PASSWORD+'") }\n')
 			print "mstsc password will be set as requested"
 		else:
 			print "MSTSC password set not requested - will use password set by EC2"
